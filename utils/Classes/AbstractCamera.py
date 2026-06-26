@@ -16,7 +16,31 @@ class AbstractCamera(ABC):
         pass
 
     @abstractmethod
+    def get_fps(self) -> float:
+        pass
+
+    @abstractmethod
     def set_exposure(self, value: int):
+        pass
+
+    @abstractmethod
+    def set_brightness(self, value):
+        pass
+
+    @abstractmethod
+    def set_contrast(self, value):
+        pass
+
+    @abstractmethod
+    def set_gamma(self, value):
+        pass
+
+    @abstractmethod
+    def set_gain(self, value):
+        pass
+
+    @abstractmethod
+    def set_auto_exposure(self, is_auto):
         pass
 
     @abstractmethod
@@ -32,19 +56,38 @@ class UVCCamera(AbstractCamera):
         )
 
     def open(self):
-        import cv2
-
         self.cap = cv2.VideoCapture(self.index)
         return self.cap.isOpened()
+
+    def get_fps(self):
+        return self.cap.get(cv2.CAP_PROP_FPS)
 
     def get_frame(self):
         ret, frame = self.cap.read()
         return frame if ret else None
 
     def set_exposure(self, value):
-
-        # Конвертация значения ползунка интерфейса в команду драйверу
         self.cap.set(cv2.CAP_PROP_EXPOSURE, value)
+
+    def set_brightness(self, value):
+        self.cap.set(cv2.CAP_PROP_BRIGHTNESS, value)
+
+    def set_contrast(self, value):
+        self.cap.set(cv2.CAP_PROP_CONTRAST, value)
+
+    def set_gamma(self, value):
+        self.cap.set(cv2.CAP_PROP_GAMMA, value)
+
+    def set_gain(self, value):
+        self.cap.set(cv2.CAP_PROP_GAIN, value)
+
+    def set_auto_exposure(self, is_auto: bool):
+        if self.cap:
+            # В OpenCV флаг автоэкспозиции зависит от драйвера.
+            # Обычно 3 - это Авто, а 1 или 0.25 - это ручной режим.
+            val = 3 if is_auto else 1
+            self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, val)
+            print(f"Автоэкспозиция: {'ВКЛ' if is_auto else 'ВЫКЛ'}")
 
     def close(self):
         if self.cap:
@@ -52,7 +95,6 @@ class UVCCamera(AbstractCamera):
 
 
 class CameraThread(QThread):
-    # Этот сигнал будет отправлять картинки в главный интерфейс
     frame_ready = Signal(QImage)
 
     def __init__(self, camera: AbstractCamera):
