@@ -1,3 +1,5 @@
 /venv/
-utils/Classes/__pycache__/
-utils/Widgets/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
