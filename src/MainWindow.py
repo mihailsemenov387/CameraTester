@@ -1,14 +1,17 @@
 import sys
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtGui import QImage, QPainter, QPixmap
+from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QDockWidget,
+    QHBoxLayout,
     QLabel,
     QMainWindow,
     QSizePolicy,
     QSlider,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -51,6 +54,77 @@ class VideoDisplayWidget(QWidget):
             painter.drawImage(x, y, scaled_img)
 
 
+class CameraSettingsWidget(QDockWidget):
+    def __init__(self, camera: AbstractCamera):
+        super().__init__("Настройки камеры")
+        self.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
+
+        settings_widget = QWidget()
+        self.layout = QVBoxLayout()
+
+        # Теперь мы можем передавать функцию для "Авто", если она есть!
+        self.add_slider(
+            "Экспозиция:", -10, 0, -5, camera.set_exposure, camera.set_auto_exposure
+        )
+        self.add_slider("Gamma:", 90, 150, 100, camera.set_gamma)
+        self.add_slider("Gain:", 4, 8, 1, camera.set_gain)
+        self.add_slider("Contrast:", 0, 255, 127, camera.set_contrast)
+        self.add_slider("Brightness:", -127, 127, 0, camera.set_brightness)
+
+        self.layout.addStretch()
+        settings_widget.setLayout(self.layout)
+        self.setWidget(settings_widget)
+
+    def add_slider(
+        self, label_text, min_val, max_val, start_val, connect_func, auto_func=None
+    ):
+        row_layout = QHBoxLayout()
+
+        label = QLabel(label_text)
+        label.setMinimumWidth(80)
+        row_layout.addWidget(label)
+
+        # 2. Ползунок
+        slider = QSlider(Qt.Orientation.Horizontal)
+        slider.setRange(min_val, max_val)
+        slider.setValue(start_val)
+
+        # 3. SpinBox (Цифры со стрелочками)
+        spinbox = QSpinBox()
+        spinbox.setRange(min_val, max_val)
+        spinbox.setValue(start_val)
+        spinbox.setFixedWidth(50)  # Чтобы окошко не растягивалось слишком сильно
+
+        # СИНХРОНИЗАЦИЯ: Ползунок двигает цифры, а цифры двигают ползунок!
+        slider.valueChanged.connect(spinbox.setValue)
+        spinbox.valueChanged.connect(slider.setValue)
+
+        # Отправляем значение в камеру (подключаем только ползунок, так как они связаны)
+        slider.valueChanged.connect(connect_func)
+
+        row_layout.addWidget(slider)
+        row_layout.addWidget(spinbox)
+
+        # 4. Кнопка Авто (Чекбокс)
+        if auto_func:
+            auto_cb = QCheckBox("Авто")
+            # Если поставили галочку -> блокируем ручной ввод (чтобы пользователь не дергал ползунок)
+            auto_cb.toggled.connect(slider.setDisabled)
+            auto_cb.toggled.connect(spinbox.setDisabled)
+            # Отправляем команду в камеру
+            auto_cb.toggled.connect(auto_func)
+
+            row_layout.addWidget(auto_cb)
+        else:
+            # Если функции Авто нет, добавляем пустое место для выравнивания
+            spacer = QWidget()
+            spacer.setFixedWidth(55)
+            row_layout.addWidget(spacer)
+
+        # Добавляем готовую строку в главный вертикальный макет
+        self.layout.addLayout(row_layout)
+
+
 class LabDashboard(QMainWindow):
     def __init__(self, camera: AbstractCamera):
         super().__init__()
@@ -67,24 +141,8 @@ class LabDashboard(QMainWindow):
         self.setCentralWidget(central_widget)
 
         # -- Док Настройки --
-        self.dock_settings = QDockWidget("Настройки камеры", self)
-        self.dock_settings.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
+        self.dock_settings = CameraSettingsWidget(self.camera)
 
-        settings_widget = QWidget()
-        settings_layout = QVBoxLayout()
-        settings_layout.addWidget(QLabel("Экспозиция:"))
-
-        # Настраиваем слайдер под типичные значения OpenCV (от -10 до 0)
-        self.slider_exp = QSlider(Qt.Orientation.Horizontal)
-        self.slider_exp.setRange(-10, 0)
-        self.slider_exp.setValue(-5)
-        # ПОДВЯЗЫВАЕМ СЛАЙДЕР К КАМЕРЕ
-        self.slider_exp.valueChanged.connect(self.camera.set_exposure)
-
-        settings_layout.addWidget(self.slider_exp)
-        settings_layout.addStretch()
-        settings_widget.setLayout(settings_layout)
-        self.dock_settings.setWidget(settings_widget)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_settings)
 
         # -- Запуск потока камеры --
