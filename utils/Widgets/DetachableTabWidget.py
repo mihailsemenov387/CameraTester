@@ -5,31 +5,29 @@ from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 class DetachableTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMovable(True)  # Разрешаем менять вкладки местами
+        self.setMovable(True)
         self.tabBarDoubleClicked.connect(self.detach_tab)
         self.detached_windows = {}
 
     def detach_tab(self, index):
-        # Не разрешаем отрывать последнюю вкладку, чтобы главное окно не пустовало
         if index < 0 or self.count() <= 1:
             return
 
         widget = self.widget(index)
         title = self.tabText(index)
 
-        # Создаем полноценное независимое окно ОС
+        # Создаем окно-контейнер
         pop_window = QWidget()
         pop_window.setWindowTitle(title)
-        pop_window.setWindowFlags(Qt.Window)  # <--- Появится в Alt-Tab!
+        pop_window.setWindowFlags(Qt.Window)
 
         layout = QVBoxLayout(pop_window)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Забираем виджет из вкладок и кладем в новое окно
         self.removeTab(index)
         layout.addWidget(widget)
+        widget.show()  # Показываем вложенный QMainWindow воркспейса
 
-        # Логика возвращения вкладки при закрытии выносного окна
         def reattach(event):
             self.addTab(widget, title)
             pop_window.deleteLater()
@@ -38,7 +36,6 @@ class DetachableTabWidget(QTabWidget):
             event.accept()
 
         pop_window.closeEvent = reattach
-        pop_window.resize(800, 600)
+        pop_window.resize(1000, 700)
         pop_window.show()
-
         self.detached_windows[title] = pop_window
