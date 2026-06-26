@@ -96,6 +96,8 @@ class UVCCamera(AbstractCamera):
 
 class CameraThread(QThread):
     frame_ready = Signal(QImage)
+    camera_opened = Signal()  # Сигнал: Камера успешно открылась
+    camera_error = Signal(str)  # Сигнал: Ошибка при открытии
 
     def __init__(self, camera: AbstractCamera):
         super().__init__()
@@ -103,23 +105,61 @@ class CameraThread(QThread):
         self.running = False
 
     def run(self):
+        # 1. ОТКРЫВАЕМ КАМЕРУ В ФОНОВОМ ПОТОКЕ (ЗДЕСЬ ОНА НЕ ЗАВЕСИТ UI)
+        if not self.camera.open():
+            self.camera_error.emit(
+                "Не удалось открыть камеру (возможно, она занята другим приложением)"
+            )
+            return
+
+        # Если успешно открылась - отправляем сигнал в главное окно
+        self.camera_opened.emit()
         self.running = True
+
         while self.running:
             frame = self.camera.get_frame()
-            if frame is not None:
-                # ---> ЗДЕСЬ МОГЛА БЫ БЫТЬ ВАША МАТЕМАТИКА (ГАУССИАНА) <---
+            if frame is None:
+                continue
 
-                # Конвертируем OpenCV BGR кадр в формат RGB для интерфейса Qt
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                h, w, ch = rgb_frame.shape
-                bytes_per_line = ch * w
+            # Конвертация кадра
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_frame.shape
+            bytes_per_line = ch * w
 
-                # Создаем картинку Qt и отправляем в интерфейс
-                q_img = QImage(
-                    rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888
-                )
-                self.frame_ready.emit(q_img)
+            q_img = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+            # ВАЖНО: обязательно .copy()!
+            self.frame_ready.emit(q_img.copy())
+
+        # Закрываем камеру при выходе из цикла
+        self.camera.close()
 
     def stop(self):
         self.running = False
-        self.wait()  # Ждем завершения потока
+        self.wait()
+
+
+class CameraFactory:
+    _types = {
+        "UVC": UVCCamera,
+        # "RTSP": RTSPCamera, # Добавишь, когда напишешь класс
+    }
+
+    @staticmethod
+    def create(config: dict) -> AbstractCamera:
+        cam_type = config.get("type")
+        camera_class = CameraFactory._types.get(cam_type)
+
+        if not camera_class:
+            return None
+
+        # У каждой камеры свои параметры.
+        # UVC нужен index, RTSP нужен будет url.
+        if cam_type == "UVC":
+            return camera_class(index=config.get("index"))
+
+        # Здесь можно будет добавить логику для других типов:
+        # elif cam_type == "RTSP":
+        #     return camera_class(url=config.get("url"))
+
+        return None
