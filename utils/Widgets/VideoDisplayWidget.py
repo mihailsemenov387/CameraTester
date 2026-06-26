@@ -1,7 +1,5 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPainter
-
-# Добавлен импорт QMediaDevices для поиска камер
 from PySide6.QtWidgets import (
     QSizePolicy,
     QWidget,

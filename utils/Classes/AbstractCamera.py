@@ -96,8 +96,9 @@ class UVCCamera(AbstractCamera):
 
 class CameraThread(QThread):
     frame_ready = Signal(QImage)
-    camera_opened = Signal()  # Сигнал: Камера успешно открылась
-    camera_error = Signal(str)  # Сигнал: Ошибка при открытии
+    raw_frame_ready = Signal(object)  # <--- НОВЫЙ СИГНАЛ ДЛЯ СЫРОГО КАДРА
+    camera_opened = Signal()
+    camera_error = Signal(str)
 
     def __init__(self, camera: AbstractCamera):
         super().__init__()
@@ -105,14 +106,10 @@ class CameraThread(QThread):
         self.running = False
 
     def run(self):
-        # 1. ОТКРЫВАЕМ КАМЕРУ В ФОНОВОМ ПОТОКЕ (ЗДЕСЬ ОНА НЕ ЗАВЕСИТ UI)
         if not self.camera.open():
-            self.camera_error.emit(
-                "Не удалось открыть камеру (возможно, она занята другим приложением)"
-            )
+            self.camera_error.emit("Не удалось открыть камеру")
             return
 
-        # Если успешно открылась - отправляем сигнал в главное окно
         self.camera_opened.emit()
         self.running = True
 
@@ -121,17 +118,17 @@ class CameraThread(QThread):
             if frame is None:
                 continue
 
-            # Конвертация кадра
+            # 1. Отдаем сырой numpy-кадр для математики
+            self.raw_frame_ready.emit(frame)
+
+            # 2. Конвертируем для экрана
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_frame.shape
             bytes_per_line = ch * w
 
             q_img = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
-
-            # ВАЖНО: обязательно .copy()!
             self.frame_ready.emit(q_img.copy())
 
-        # Закрываем камеру при выходе из цикла
         self.camera.close()
 
     def stop(self):

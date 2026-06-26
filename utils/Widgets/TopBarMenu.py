@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QLabel,
+    QMainWindow,
     QStackedWidget,  # Переключатель панелей
     QVBoxLayout,
 )
