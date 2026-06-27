@@ -1,7 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
-    QDockWidget,
     QHBoxLayout,
     QLabel,
     QSlider,
@@ -13,14 +12,15 @@ from PySide6.QtWidgets import (
 from utils.Classes.AbstractCamera import AbstractCamera
 
 
-class CameraSettingsWidget(QDockWidget):
+class CameraSettingsWidget(QWidget):  # <--- Теперь это просто QWidget
     def __init__(self, camera: AbstractCamera):
-        super().__init__("Настройки камеры")
-        self.setAllowedAreas(Qt.DockWidgetArea.AllDockWidgetAreas)
+        super().__init__()
 
-        settings_widget = QWidget()
-        self.layout = QVBoxLayout()
+        # Создаем макет прямо для этого виджета
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(5, 5, 5, 5)
 
+        # Добавляем слайдеры напрямую в наш макет
         self.add_slider(
             "Экспозиция:", -10, 0, -5, camera.set_exposure, camera.set_auto_exposure
         )
@@ -29,9 +29,7 @@ class CameraSettingsWidget(QDockWidget):
         self.add_slider("Contrast:", 0, 255, 127, camera.set_contrast)
         self.add_slider("Brightness:", -127, 127, 0, camera.set_brightness)
 
-        self.layout.addStretch()
-        settings_widget.setLayout(self.layout)
-        self.setWidget(settings_widget)
+        self.main_layout.addStretch()
 
     def add_slider(
         self, label_text, min_val, max_val, start_val, connect_func, auto_func=None
@@ -69,4 +67,4 @@ class CameraSettingsWidget(QDockWidget):
             spacer.setFixedWidth(55)
             row_layout.addWidget(spacer)
 
-        self.layout.addLayout(row_layout)
+        self.main_layout.addLayout(row_layout)

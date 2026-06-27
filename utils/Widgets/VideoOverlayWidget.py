@@ -54,22 +54,34 @@ class VideoOverlayWidget(QWidget):
 
         # --- Гауссиана по X ---
         if "X_gauss" in res and "x_w" in res:
-            painter.setPen(QPen(Qt.GlobalColor.yellow, 2))
-            plot_h = 60
+            painter.setPen(
+                QPen(Qt.GlobalColor.yellow, 3)
+            )  # Толщина 3 для лучшей видимости
+            plot_h = 80
+
+            # Нижняя граница кадра с отступом 10 пикселей внутрь картинки
+            y_baseline = y_off + scaled_size.height() - 10
+
             max_val = np.max(res["x_w"]) if np.max(res["x_w"]) > 0 else 1
             points = [
-                QPointF(x_off + (i * scale), y_off + plot_h - (val / max_val * plot_h))
+                # Вычитаем из y_baseline, чтобы график рос ВВЕРХ
+                QPointF(x_off + (i * scale), y_baseline - (val / max_val * plot_h))
                 for i, val in enumerate(res["X_gauss"])
             ]
             painter.drawPolyline(points)
 
         # --- Гауссиана по Y ---
         if "Y_gauss" in res and "y_w" in res:
-            painter.setPen(QPen(Qt.GlobalColor.cyan, 2))
-            plot_w = 60
+            painter.setPen(QPen(Qt.GlobalColor.cyan, 3))
+            plot_w = 80
+
+            # Правая граница кадра с отступом 10 пикселей внутрь
+            x_baseline = x_off + scaled_size.width() - 10
+
             max_val = np.max(res["y_w"]) if np.max(res["y_w"]) > 0 else 1
             points = [
-                QPointF(x_off + plot_w - (val / max_val * plot_w), y_off + (i * scale))
+                # Вычитаем из x_baseline, чтобы график рос ВЛЕВО внутрь кадра
+                QPointF(x_baseline - (val / max_val * plot_w), y_off + (i * scale))
                 for i, val in enumerate(res["Y_gauss"])
             ]
             painter.drawPolyline(points)

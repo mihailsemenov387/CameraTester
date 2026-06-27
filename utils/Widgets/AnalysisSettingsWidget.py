@@ -1,7 +1,6 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
-    QDockWidget,
     QLabel,
     QSpinBox,
     QVBoxLayout,
@@ -9,19 +8,14 @@ from PySide6.QtWidgets import (
 )
 
 
-class AnalysisSettingsWidget(QDockWidget):
+class AnalysisSettingsWidget(QWidget):  # <--- МЕНЯЕМ НА QWidget
     speed_changed = Signal(int)
     enabled_changed = Signal(bool)
 
     def __init__(self, parent=None):
-        super().__init__("Параметры анализа", parent)
-        # Разрешаем крепить только СЛЕВА или СПРАВА
-        self.setAllowedAreas(
-            Qt.DockWidgetArea.LeftDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea
-        )
-
-        container = QWidget()
-        layout = QVBoxLayout(container)
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
 
         self.enable_cb = QCheckBox("Включить расчет Гаусса")
         self.enable_cb.setChecked(False)
@@ -37,6 +31,3 @@ class AnalysisSettingsWidget(QDockWidget):
         layout.addWidget(QLabel("Период обновления:"))
         layout.addWidget(self.speed_spin)
         layout.addStretch()
-
-        container.setLayout(layout)
-        self.setWidget(container)

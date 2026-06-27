@@ -5,6 +5,8 @@ import numpy as np
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QImage
 
+from utils.Signals import GlobalBus
+
 
 class AbstractCamera(ABC):
     @abstractmethod
@@ -95,21 +97,21 @@ class UVCCamera(AbstractCamera):
 
 
 class CameraThread(QThread):
+    # Оставляем frame_ready только для локальной быстрой отрисовки, если нужно
     frame_ready = Signal(QImage)
-    raw_frame_ready = Signal(object)  # <--- НОВЫЙ СИГНАЛ ДЛЯ СЫРОГО КАДРА
     camera_opened = Signal()
     camera_error = Signal(str)
 
-    def __init__(self, camera: AbstractCamera):
+    def __init__(self, camera: AbstractCamera, name: str):
         super().__init__()
         self.camera = camera
+        self.cam_name = name  # Теперь поток знает, как называется его камера
         self.running = False
 
     def run(self):
         if not self.camera.open():
-            self.camera_error.emit("Не удалось открыть камеру")
+            self.camera_error.emit("Ошибка открытия")
             return
-
         self.camera_opened.emit()
         self.running = True
 
@@ -118,22 +120,21 @@ class CameraThread(QThread):
             if frame is None:
                 continue
 
-            # 1. Отдаем сырой numpy-кадр для математики
-            self.raw_frame_ready.emit(frame)
+            # ВЕЩАЕМ В ШИНУ НАПРЯМУЮ: "Я Камера Х, вот мой кадр"
+            GlobalBus.instance().raw_frame_sent.emit(self.cam_name, frame)
 
-            # 2. Конвертируем для экрана
+            # Конвертация для UI (опционально, можно тоже через шину)
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_frame.shape
-            bytes_per_line = ch * w
-
-            q_img = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
+            q_img = QImage(rgb_frame.data, w, h, ch * w, QImage.Format_RGB888)
             self.frame_ready.emit(q_img.copy())
 
         self.camera.close()
 
     def stop(self):
+
         self.running = False
-        self.wait()
+        self.wait()  # Ждем, пока метод run() реально завершится
 
 
 class CameraFactory:

@@ -16,7 +16,6 @@ class DetachableTabWidget(QTabWidget):
         widget = self.widget(index)
         title = self.tabText(index)
 
-        # Создаем окно-контейнер
         pop_window = QWidget()
         pop_window.setWindowTitle(title)
         pop_window.setWindowFlags(Qt.Window)
@@ -26,7 +25,9 @@ class DetachableTabWidget(QTabWidget):
 
         self.removeTab(index)
         layout.addWidget(widget)
-        widget.show()  # Показываем вложенный QMainWindow воркспейса
+
+        # ВАЖНО: Qt прячет виджет при удалении из таба, нужно показать его обратно
+        widget.show()
 
         def reattach(event):
             self.addTab(widget, title)
