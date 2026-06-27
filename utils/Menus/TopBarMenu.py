@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from utils.Widgets.CameraTypeConfig import RTSPConfigPage, UVCConfigPage
+from .CameraTypeConfig import RTSPConfigPage, UVCConfigPage
 
 
 class CameraSelectionDialog(QDialog):

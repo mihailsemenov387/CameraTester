@@ -1,22 +1,21 @@
 import importlib
-import inspect  # Добавим для проверки аргументов __init__
 import pkgutil
-import sys
 
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QMessageBox
 
 import workspaces
 from utils.Classes.AbstractCamera import CameraFactory, CameraThread
+from utils.Menus.TopBarMenu import CameraSelectionDialog
 from utils.Widgets.DetachableTabWidget import DetachableTabWidget
-from utils.Widgets.TopBarMenu import CameraSelectionDialog
-from utils.Widgets.Workspaces import CameraWorkspace  # Импорт ядра
+
+from .CameraWorkspace import CameraWorkspace
 
 
 class Dashboard(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("VEPP-2000 Platform")
+        self.setWindowTitle("CAMTest")
         self.resize(1200, 850)
 
         self.tabs = DetachableTabWidget(self)
@@ -46,30 +45,15 @@ class Dashboard(QMainWindow):
                     if hasattr(module, "WORKSPACE_CLASS"):
                         cls = getattr(module, "WORKSPACE_CLASS")
 
-                        # ПРОВЕРКА: может ли этот класс создаться без аргументов?
-                        # (Это отсечет CameraWorkspace, если он случайно попал в загрузку)
-                        sig = inspect.signature(cls.__init__)
-                        # Если в __init__ больше 1 аргумента (self) и они не имеют дефолтных значений
-                        params = [
-                            p
-                            for p in sig.parameters.values()
-                            if p.name != "self" and p.default is p.empty
-                        ]
-
-                        if len(params) == 0:
-                            title = getattr(module, "WORKSPACE_TITLE", module_name)
-                            action = QAction(title, self)
-                            # Захватываем текущий класс через partial или дефолтный аргумент
-                            action.triggered.connect(
-                                lambda chk=False, c=cls, t=title: (
-                                    self.add_workspace_tab(c, t)
-                                )
+                        title = getattr(module, "WORKSPACE_TITLE", module_name)
+                        action = QAction(title, self)
+                        # Захватываем текущий класс через partial или дефолтный аргумент
+                        action.triggered.connect(
+                            lambda chk=False, c=cls, t=title: self.add_workspace_tab(
+                                c, t
                             )
-                            self.modules_menu.addAction(action)
-                        else:
-                            print(
-                                f"Модуль {module_name} пропущен: требует аргументы в __init__"
-                            )
+                        )
+                        self.modules_menu.addAction(action)
 
                 except Exception as e:
                     print(f"Ошибка загрузки модуля {module_name}: {e}")
