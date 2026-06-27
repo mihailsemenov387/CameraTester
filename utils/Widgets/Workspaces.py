@@ -2,12 +2,12 @@ import cv2
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QVBoxLayout
+from utils.Widgets.AnalysisSettingsWidget import AnalysisSettingsWidget
+from utils.Widgets.SettingsWidget import CameraSettingsWidget
 
 from utils.Classes.Plotter import Plotter
 from utils.Signals import GlobalBus
 from utils.SpecialFunctions.AnalysysFun import process
-from utils.Widgets.AnalysisSettingsWidget import AnalysisSettingsWidget
-from utils.Widgets.SettingsWidget import CameraSettingsWidget
 from utils.Widgets.VideoDisplayWidget import VideoDisplayWidget
 from utils.Widgets.VideoOverlayWidget import VideoOverlayWidget
 

@@ -1,3 +1,13 @@
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import QDockWidget, QMainWindow
+
+from utils.Classes.Plotter import Plotter
+from utils.Signals import GlobalBus
+from utils.SpecialFunctions.AnalysysFun import process
+
+from .AnalysisSettingsWidget import AnalysisSettingsWidget
+
+
 class AnalysisWorkspace(QMainWindow):
     def __init__(self):
         super().__init__()
