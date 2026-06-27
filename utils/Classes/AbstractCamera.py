@@ -132,9 +132,12 @@ class CameraThread(QThread):
         self.camera.close()
 
     def stop(self):
-
         self.running = False
-        self.wait()  # Ждем, пока метод run() реально завершится
+
+        if not self.wait(500):
+            print("Поток камеры завис в OpenCV, принудительное завершение...")
+            self.terminate()
+            self.wait()  # Ждем завершения после терминации, пока метод run() реально завершится
 
 
 class CameraFactory:

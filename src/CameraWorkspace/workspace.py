@@ -6,11 +6,12 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow, QVBoxLayout
 from utils.Signals import GlobalBus
 from utils.Widgets.VideoDisplayWidget import VideoDisplayWidget
 from utils.Widgets.VideoOverlayWidget import VideoOverlayWidget
+from workspaces.AbstractWorkspace import AbstractWorkspace
 
 from .CameraSettingsWidget import CameraSettingsWidget
 
 
-class CameraWorkspace(QMainWindow):
+class CameraWorkspace(AbstractWorkspace):
     def __init__(self, camera_obj, name="Camera"):
         super().__init__()
         self.cam_name = name
@@ -57,11 +58,6 @@ class CameraWorkspace(QMainWindow):
             img = self.video_container.current_image
             if img:
                 self.overlay.update_data(data, img.width(), img.height())
-
-    def closeEvent(self, event):
-        """Вызывается автоматически при закрытии вкладки или окна"""
-        self.shutdown()
-        event.accept()
 
     def shutdown(self):
         """Безопасная остановка потока"""

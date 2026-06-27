@@ -93,8 +93,18 @@ class Dashboard(QMainWindow):
         ws.thread.start()
 
     def closeEvent(self, event):
+        print("Завершение работы программы...")
+
         for i in range(self.tabs.count()):
-            widget = self.tabs.widget(i)
-            if hasattr(widget, "shutdown"):
-                widget.shutdown()
+            w = self.tabs.widget(i)
+            if hasattr(w, "shutdown"):
+                w.shutdown()
+
+        for title in list(self.tabs.detached_windows.keys()):
+            win = self.tabs.detached_windows[title]
+            ws = win.findChild(AbstractWorkspace)
+            if ws:
+                ws.shutdown()
+            win.close()
+
         event.accept()

@@ -4,11 +4,12 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow
 from utils.Classes.Plotter import Plotter
 from utils.Signals import GlobalBus
 from utils.SpecialFunctions.AnalysysFun import process
+from workspaces.AbstractWorkspace import AbstractWorkspace
 
 from .AnalysisSettingsWidget import AnalysisSettingsWidget
 
 
-class AnalysisWorkspace(QMainWindow):
+class AnalysisWorkspace(AbstractWorkspace):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Аналитика")
@@ -68,3 +69,9 @@ class AnalysisWorkspace(QMainWindow):
 
         # Очищаем буфер, чтобы не считать одно и то же, если камера тормозит
         # self.latest_frame = None
+
+    def shutdown(self):
+        """Реализация интерфейса: гасим таймер анализа"""
+        if hasattr(self, "analysis_timer"):
+            self.analysis_timer.stop()
+        print("Таймер анализа остановлен.")

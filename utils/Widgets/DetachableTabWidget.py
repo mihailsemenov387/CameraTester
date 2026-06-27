@@ -1,11 +1,17 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
+from workspaces.AbstractWorkspace import AbstractWorkspace
+
 
 class DetachableTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMovable(True)
+
+        self.setTabsClosable(True)  # Включаем крестики на вкладках
+        self.tabCloseRequested.connect(self.close_tab)  #
+
         self.tabBarDoubleClicked.connect(self.detach_tab)
         self.detached_windows = {}
 
@@ -40,3 +46,12 @@ class DetachableTabWidget(QTabWidget):
         pop_window.resize(1000, 700)
         pop_window.show()
         self.detached_windows[title] = pop_window
+
+    def close_tab(self, index):
+        widget = self.widget(index)
+        if widget:
+            if hasattr(widget, "shutdown"):
+                widget.shutdown()
+            widget.hide()
+            self.removeTab(index)
+            widget.deleteLater()
