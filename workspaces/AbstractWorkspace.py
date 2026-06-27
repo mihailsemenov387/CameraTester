@@ -3,6 +3,16 @@ from abc import ABCMeta, abstractmethod
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMainWindow
 
+WORKSPACE_REGISTRY = {}
+
+
+def register_workspace(title: str):
+    def wrapper(cls):
+        WORKSPACE_REGISTRY[title] = cls
+        return cls
+
+    return wrapper
+
 
 class WorkspaceMeta(type(QObject), ABCMeta):
     pass

@@ -6,11 +6,12 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow, QVBoxLayout
 from utils.Signals import GlobalBus
 from utils.Widgets.VideoDisplayWidget import VideoDisplayWidget
 from utils.Widgets.VideoOverlayWidget import UnifiedBeamOverlay
-from workspaces.AbstractWorkspace import AbstractWorkspace
+from workspaces.AbstractWorkspace import AbstractWorkspace, register_workspace
 
 from .CameraSettingsWidget import CameraSettingsWidget
 
 
+# @register_workspace(title="Камера (Live)")
 class CameraWorkspace(AbstractWorkspace):
     def __init__(self, camera_obj, name="Camera"):
         super().__init__()

@@ -4,11 +4,12 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow
 from utils.Classes.Plotter import Plotter
 from utils.Signals import GlobalBus
 from utils.SpecialFunctions.AnalysysFun import process, process_many
-from workspaces.AbstractWorkspace import AbstractWorkspace
+from workspaces.AbstractWorkspace import AbstractWorkspace, register_workspace
 
 from .AnalysisSettingsWidget import AnalysisSettingsWidget
 
 
+@register_workspace(title="Аналитика профиля")
 class AnalysisWorkspace(AbstractWorkspace):
     def __init__(self):
         super().__init__()

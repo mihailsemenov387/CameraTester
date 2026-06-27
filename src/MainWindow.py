@@ -8,8 +8,9 @@ import workspaces
 from utils.Classes.AbstractCamera import CameraFactory, CameraThread
 from utils.Menus.TopBarMenu import CameraSelectionDialog
 from utils.Widgets.DetachableTabWidget import DetachableTabWidget
+from workspaces.AbstractWorkspace import WORKSPACE_REGISTRY
 
-from .CameraWorkspace import CameraWorkspace
+from .CameraWorkspace.workspace import CameraWorkspace
 
 
 class Dashboard(QMainWindow):
@@ -34,28 +35,48 @@ class Dashboard(QMainWindow):
         self.modules_menu = menu_bar.addMenu("Модули")
 
     # TODO: rewrite
+    # def load_workspaces(self):
+    #     self.modules_menu.clear()
+
+    #     for loader, module_name, is_pkg in pkgutil.iter_modules(workspaces.__path__):
+    #         if is_pkg:
+    #             try:
+    #                 module = importlib.import_module(f"workspaces.{module_name}")
+
+    #                 if hasattr(module, "WORKSPACE_CLASS"):
+    #                     cls = getattr(module, "WORKSPACE_CLASS")
+
+    #                     title = getattr(module, "WORKSPACE_TITLE", module_name)
+    #                     action = QAction(title, self)
+    #                     action.triggered.connect(
+    #                         lambda chk=False, c=cls, t=title: self.add_workspace_tab(
+    #                             c, t
+    #                         )
+    #                     )
+    #                     self.modules_menu.addAction(action)
+
+    #             except Exception as e:
+    #                 print(f"Ошибка загрузки модуля {module_name}: {e}")
     def load_workspaces(self):
         self.modules_menu.clear()
 
-        for loader, module_name, is_pkg in pkgutil.iter_modules(workspaces.__path__):
-            if is_pkg:
-                try:
-                    module = importlib.import_module(f"workspaces.{module_name}")
+        prefix = workspaces.__name__ + "."
+        for loader, module_name, is_pkg in pkgutil.walk_packages(
+            workspaces.__path__, prefix
+        ):
+            try:
+                importlib.import_module(module_name)
+            except Exception as e:
+                print(f"Ошибка загрузки модуля {module_name}: {e}")
 
-                    if hasattr(module, "WORKSPACE_CLASS"):
-                        cls = getattr(module, "WORKSPACE_CLASS")
+        for title, cls in WORKSPACE_REGISTRY.items():
+            action = QAction(title, self)
 
-                        title = getattr(module, "WORKSPACE_TITLE", module_name)
-                        action = QAction(title, self)
-                        action.triggered.connect(
-                            lambda chk=False, c=cls, t=title: self.add_workspace_tab(
-                                c, t
-                            )
-                        )
-                        self.modules_menu.addAction(action)
-
-                except Exception as e:
-                    print(f"Ошибка загрузки модуля {module_name}: {e}")
+            # lambda chk=False, c=cls, t=title нужна, чтобы "заморозить" переменные в цикле
+            action.triggered.connect(
+                lambda chk=False, c=cls, t=title: self.add_workspace_tab(c, t)
+            )
+            self.modules_menu.addAction(action)
 
     def add_workspace_tab(self, cls, title):
         try:
