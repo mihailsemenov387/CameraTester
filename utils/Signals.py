@@ -7,6 +7,10 @@ class GlobalBus(QObject):
 
     # Анализ кидает сюда результаты Гаусса
     analysis_results_sent = Signal(str, dict)
+    analysis_many_results_sent = Signal(str, dict)
+
+    draw_single_gauss = Signal(bool)
+    draw_many_gauss = Signal(bool)
 
     _instance = None
 

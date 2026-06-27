@@ -1,3 +1,4 @@
+import numpy as np
 from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPen
@@ -9,6 +10,8 @@ class Plotter(QWidget):
         super().__init__()
         layout = QVBoxLayout(self)
 
+        self.fit_series_x = []
+        self.fit_series_y = []
         # График X
         self.series_x_raw = QLineSeries()
         self.series_x_raw.setName("Сырые данные X")
@@ -43,27 +46,45 @@ class Plotter(QWidget):
         layout.addWidget(QChartView(self.chart_y))
 
     def update_data(self, data):
-        """Принимает словарь результатов из функции process"""
+        # Если в словаре нет базовых ключей — это "битый" результат, игнорируем
+        if not data or "x_raw" not in data or "y_raw" not in data:
+            return
 
-        # Обновляем серию X
-        points_x_raw = [QPointF(x, y) for x, y in zip(data["x"], data["x_w"])]
-        points_x_fit = [QPointF(x, y) for x, y in zip(data["x"], data["X_gauss"])]
-        self.series_x_raw.replace(points_x_raw)
-        self.series_x_fit.replace(points_x_fit)
+        try:
+            # 1. Рисуем синие линии (Сырые данные)
+            points_x = [QPointF(float(x), float(y)) for x, y in zip(data["x"], data["x_raw"])]
+            self.series_x_raw.replace(points_x)
 
-        # Обновляем серию Y
-        points_y_raw = [QPointF(x, y) for x, y in zip(data["y"], data["y_w"])]
-        points_y_fit = [QPointF(x, y) for x, y in zip(data["y"], data["Y_gauss"])]
-        self.series_y_raw.replace(points_y_raw)
-        self.series_y_fit.replace(points_y_fit)
+            points_y = [QPointF(float(x), float(y)) for x, y in zip(data["y"], data["y_raw"])]
+            self.series_y_raw.replace(points_y)
 
-        # Пересчитываем оси (чтобы график не улетал)
-        self.chart_x.axes(Qt.Orientation.Horizontal)[0].setRange(0, data["x"][-1])
-        self.chart_x.axes(Qt.Orientation.Vertical)[0].setRange(
-            0, max(data["x_w"]) * 1.1
-        )
+            # 2. Рисуем красную/зеленую линии (Фиттинг)
+            if "total_fit_x" in data:
+                fx_pts = [QPointF(float(xi), float(yi)) for xi, yi in enumerate(data["total_fit_x"])]
+                self.series_x_fit.replace(fx_pts)
 
-        self.chart_y.axes(Qt.Orientation.Horizontal)[0].setRange(0, data["y"][-1])
-        self.chart_y.axes(Qt.Orientation.Vertical)[0].setRange(
-            0, max(data["y_w"]) * 1.1
-        )
+            if "total_fit_y" in data:
+                fy_pts = [QPointF(float(xi), float(yi)) for xi, yi in enumerate(data["total_fit_y"])]
+                self.series_y_fit.replace(fy_pts)
+
+            # 3. Обновляем границы осей
+            self.chart_x.axes(Qt.Horizontal)[0].setRange(0, float(data["x"][-1]))
+            self.chart_x.axes(Qt.Vertical)[0].setRange(0, float(np.max(data["x_raw"]) * 1.1 + 1))
+
+            self.chart_y.axes(Qt.Horizontal)[0].setRange(0, float(data["y"][-1]))
+            self.chart_y.axes(Qt.Vertical)[0].setRange(0, float(np.max(data["y_raw"]) * 1.1 + 1))
+
+        except Exception as e:
+            # Теперь мы увидим реальную ошибку, если она случится внутри отрисовки
+            print(f"Plotter Render Error: {e}")
+
+    def _update_fits(self, chart, fits, color):
+        """Рисует пачку Гауссиан на графике"""
+        if fits:
+            x_fit, y_fit = fits[0]  # Берем первый найденный пик
+            points = [QPointF(xi, yi) for xi, yi in zip(x_fit, y_fit)]
+            # Используем твою существующую серию series_x_fit / series_y_fit
+            if chart == self.chart_x:
+                self.series_x_fit.replace(points)
+            else:
+                self.series_y_fit.replace(points)
