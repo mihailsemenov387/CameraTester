@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
 )
 
 
-class AnalysisSettingsWidget(QWidget):  # <--- МЕНЯЕМ НА QWidget
+class AnalysisSettingsWidget(QWidget):
     speed_changed = Signal(int)
     enabled_changed = Signal(bool)
 
