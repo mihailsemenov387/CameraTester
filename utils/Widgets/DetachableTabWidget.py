@@ -1,8 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
-from workspaces.AbstractWorkspace import AbstractWorkspace
-
 
 class DetachableTabWidget(QTabWidget):
     def __init__(self, parent=None):
@@ -22,7 +20,7 @@ class DetachableTabWidget(QTabWidget):
         widget = self.widget(index)
         title = self.tabText(index)
 
-        pop_window = QWidget()
+        pop_window = QWidget(self.window())
         pop_window.setWindowTitle(title)
         pop_window.setWindowFlags(Qt.Window)
 
@@ -55,3 +53,14 @@ class DetachableTabWidget(QTabWidget):
             widget.hide()
             self.removeTab(index)
             widget.deleteLater()
+
+    def close_all_detached(self):
+        # Создаем копию списка окон, чтобы избежать ошибок при удалении во время цикла
+        windows = list(self.detached_windows.values())
+        for win in windows:
+            # Отключаем reattach перед закрытием, чтобы вкладки не пытались
+            # вернуться в уже закрывающееся главное окно
+            win.closeEvent = lambda event: event.accept()
+            win.close()
+            win.deleteLater()
+        self.detached_windows.clear()

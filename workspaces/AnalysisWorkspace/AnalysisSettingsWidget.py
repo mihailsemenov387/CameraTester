@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QLabel,
     QSpinBox,
     QVBoxLayout,
@@ -19,24 +20,16 @@ class AnalysisSettingsWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)
 
-        # 1. Группа выбора режима (Расчет)
-        self.enable_cb = QCheckBox("Расчет: Одиночный Гаусс")
-        self.enable_cb_many = QCheckBox("Расчет: Много пиков (MTF)")
-        
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItem("Выключено", 0)
+        self.mode_combo.addItem("Одиночный Гаусс", 1)
+        self.mode_combo.addItem("Много пиков (MTF)", 2)
 
+        self.mode_combo.currentIndexChanged.connect(self._on_mode_changed)
 
-        
         # 2. Группа отрисовки (Оверлей)
-        self.single_gauss_cb = QCheckBox("Отрисовка: Одиночный")
-        self.many_gauss_cb = QCheckBox("Отрисовка: Много пиков")
-
-        # 3. Настройка логики исключения (чтобы не включить оба сразу)
-        self.enable_cb.toggled.connect(self._on_single_toggled)
-        self.enable_cb_many.toggled.connect(self._on_many_toggled)
-
-        # 4. Прокидываем сигналы в шину для оверлеев
-        self.single_gauss_cb.toggled.connect(GlobalBus.instance().draw_single_gauss.emit)
-        self.many_gauss_cb.toggled.connect(GlobalBus.instance().draw_many_gauss.emit)
+        self.is_draw_fit = QCheckBox("Отоброзить фит на главном выходе")
+        self.is_draw_fit.toggled.connect(GlobalBus.instance().is_draw_fit.emit)
 
         # Спинбокс
         self.speed_spin = QSpinBox()
@@ -46,29 +39,20 @@ class AnalysisSettingsWidget(QWidget):
         self.speed_spin.valueChanged.connect(self.speed_changed.emit)
 
         # Компонуем
-        layout.addWidget(QLabel("<b>МАТЕМАТИКА</b>"))
-        layout.addWidget(self.enable_cb)
-        layout.addWidget(self.enable_cb_many)
+        layout.addWidget(QLabel("<b>АЛГОРИТМ</b>"))
+        layout.addWidget(self.mode_combo)
         layout.addWidget(QLabel("<b>ВИЗУАЛИЗАЦИЯ</b>"))
-        layout.addWidget(self.single_gauss_cb)
-        layout.addWidget(self.many_gauss_cb)
+        layout.addWidget(self.is_draw_fit)
         layout.addWidget(QLabel("<b>ТАЙМИНГ</b>"))
         layout.addWidget(self.speed_spin)
         layout.addStretch()
 
-    def _on_single_toggled(self, checked):
-        if checked:
-            # Если включаем сингл - выключаем режим "много"
-            self.enable_cb_many.setChecked(False)
-            self.mode_changed.emit(1)
-        elif not self.enable_cb_many.isChecked():
-            # Если оба выключены
-            self.mode_changed.emit(0)
+        self._on_mode_changed()
 
-    def _on_many_toggled(self, checked):
-        if checked:
-            # Если включаем много - выключаем сингл
-            self.enable_cb.setChecked(False)
-            self.mode_changed.emit(2)
-        elif not self.enable_cb.isChecked():
-            self.mode_changed.emit(0)
+    def _on_mode_changed(self):
+        current_mode = self.mode_combo.currentData()
+
+        self.mode_changed.emit(current_mode)
+
+        need_draw_cross = current_mode == 1
+        GlobalBus.instance().is_draw_cross.emit(need_draw_cross)

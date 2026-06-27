@@ -26,15 +26,15 @@ class Dashboard(QMainWindow):
 
     def create_menu(self):
         menu_bar = self.menuBar()
-        sys_menu = menu_bar.addMenu("Система")
+        sys_menu = menu_bar.addMenu("Подключение")
         sys_menu.addAction("Подключить камеру", self.on_connect_clicked)
         sys_menu.addSeparator()
         sys_menu.addAction("Выход", self.close)
 
         self.modules_menu = menu_bar.addMenu("Модули")
 
+    # TODO: rewrite
     def load_workspaces(self):
-        """Динамическая загрузка модулей-потребителей"""
         self.modules_menu.clear()
 
         for loader, module_name, is_pkg in pkgutil.iter_modules(workspaces.__path__):
@@ -47,7 +47,6 @@ class Dashboard(QMainWindow):
 
                         title = getattr(module, "WORKSPACE_TITLE", module_name)
                         action = QAction(title, self)
-                        # Захватываем текущий класс через partial или дефолтный аргумент
                         action.triggered.connect(
                             lambda chk=False, c=cls, t=title: self.add_workspace_tab(
                                 c, t
@@ -59,7 +58,6 @@ class Dashboard(QMainWindow):
                     print(f"Ошибка загрузки модуля {module_name}: {e}")
 
     def add_workspace_tab(self, cls, title):
-        """Создает вкладку модуля"""
         try:
             instance = cls()
             self.tabs.addTab(instance, title)
@@ -81,7 +79,6 @@ class Dashboard(QMainWindow):
 
         self.statusBar().showMessage(f"Подключение к {name}...")
 
-        # Создаем CameraWorkspace (Core), передавая камеру
         ws = CameraWorkspace(camera, name)
         self.tabs.addTab(ws, f"Live: {name}")
         self.tabs.setCurrentWidget(ws)
@@ -95,16 +92,16 @@ class Dashboard(QMainWindow):
     def closeEvent(self, event):
         print("Завершение работы программы...")
 
-        for i in range(self.tabs.count()):
-            w = self.tabs.widget(i)
-            if hasattr(w, "shutdown"):
-                w.shutdown()
+        if hasattr(self.tabs, "close_all_detached"):
+            self.tabs.close_all_detached()
 
-        for title in list(self.tabs.detached_windows.keys()):
-            win = self.tabs.detached_windows[title]
-            ws = win.findChild(AbstractWorkspace)
-            if ws:
-                ws.shutdown()
-            win.close()
+        for i in range(self.tabs.count()):
+            widget = self.tabs.widget(i)
+            if hasattr(widget, "shutdown"):
+                widget.shutdown()
+
+        self.tabs.clear()
+
+        print("Все модули остановлены. Выход.")
 
         event.accept()

@@ -9,8 +9,8 @@ class GlobalBus(QObject):
     analysis_results_sent = Signal(str, dict)
     analysis_many_results_sent = Signal(str, dict)
 
-    draw_single_gauss = Signal(bool)
-    draw_many_gauss = Signal(bool)
+    is_draw_fit = Signal(bool)
+    is_draw_cross = Signal(bool)
 
     _instance = None
 

@@ -12,15 +12,13 @@ from PySide6.QtWidgets import (
 from utils.Classes.AbstractCamera import AbstractCamera
 
 
-class CameraSettingsWidget(QWidget):  # <--- Теперь это просто QWidget
+class CameraSettingsWidget(QWidget):
     def __init__(self, camera: AbstractCamera):
         super().__init__()
 
-        # Создаем макет прямо для этого виджета
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
 
-        # Добавляем слайдеры напрямую в наш макет
         self.add_slider(
             "Экспозиция:", -10, 0, -5, camera.set_exposure, camera.set_auto_exposure
         )

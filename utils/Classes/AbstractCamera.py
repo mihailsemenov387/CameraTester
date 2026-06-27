@@ -53,9 +53,7 @@ class AbstractCamera(ABC):
 class UVCCamera(AbstractCamera):
     def __init__(self, index=0):
         self.index = index
-        self.cap = (
-            None  # Здесь можно использовать встроенный cv2 чисто как драйвер-доставщик
-        )
+        self.cap = None
 
     def open(self):
         self.cap = cv2.VideoCapture(self.index)
@@ -85,8 +83,6 @@ class UVCCamera(AbstractCamera):
 
     def set_auto_exposure(self, is_auto: bool):
         if self.cap:
-            # В OpenCV флаг автоэкспозиции зависит от драйвера.
-            # Обычно 3 - это Авто, а 1 или 0.25 - это ручной режим.
             val = 3 if is_auto else 1
             self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, val)
             print(f"Автоэкспозиция: {'ВКЛ' if is_auto else 'ВЫКЛ'}")

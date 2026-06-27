@@ -63,22 +63,25 @@ class AnalysisWorkspace(AbstractWorkspace):
         else:
             self.analysis_timer.stop()
 
-
     def _do_analysis_step(self):
-        if self.latest_frame is None: return
+        if self.latest_frame is None:
+            return
 
         if self.current_mode == 1:
             res = process(self.latest_frame)
             if res:
                 self.plotter.update_data(res)
-                GlobalBus.instance().analysis_results_sent.emit(self.latest_cam_name, res)
+                GlobalBus.instance().analysis_results_sent.emit(
+                    self.latest_cam_name, res
+                )
 
         elif self.current_mode == 2:
             res = process_many(self.latest_frame)
             if res:
                 self.plotter.update_data(res)
-                GlobalBus.instance().analysis_many_results_sent.emit(self.latest_cam_name, res)
-
+                GlobalBus.instance().analysis_many_results_sent.emit(
+                    self.latest_cam_name, res
+                )
 
     def shutdown(self):
         """Реализация интерфейса: гасим таймер анализа"""
