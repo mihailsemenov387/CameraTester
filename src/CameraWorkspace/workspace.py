@@ -5,13 +5,12 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow, QVBoxLayout
 
 from utils.Signals import GlobalBus
 from utils.Widgets.VideoDisplayWidget import VideoDisplayWidget
-from utils.Widgets.VideoOverlayWidget import UnifiedBeamOverlay
-from workspaces.AbstractWorkspace import AbstractWorkspace, register_workspace
+from utils.Widgets.VideoOverlayWidget import VideoOverlayWidget
+from workspaces.AbstractWorkspace import AbstractWorkspace
 
 from .CameraSettingsWidget import CameraSettingsWidget
 
 
-# @register_workspace(title="Камера (Live)")
 class CameraWorkspace(AbstractWorkspace):
     def __init__(self, camera_obj, name="Camera"):
         super().__init__()
@@ -20,10 +19,10 @@ class CameraWorkspace(AbstractWorkspace):
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
 
         ws_menu = self.menuBar()
-        self.view_menu = ws_menu.addMenu("Вид")
+        self.view_menu = ws_menu.addMenu("Настройки")
 
         self.video_container = VideoDisplayWidget()
-        self.overlay = UnifiedBeamOverlay()
+        self.overlay = VideoOverlayWidget()
         ov_layout = QVBoxLayout(self.video_container)
         ov_layout.setContentsMargins(0, 0, 0, 0)
         ov_layout.addWidget(self.overlay)
@@ -31,7 +30,7 @@ class CameraWorkspace(AbstractWorkspace):
 
         self.is_draw_fit = False
 
-        self.dock_hw = QDockWidget("Настройки", self)
+        self.dock_hw = QDockWidget("Настройки камеры", self)
         self.settings_ui = CameraSettingsWidget(camera_obj)
         self.dock_hw.setWidget(self.settings_ui)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_hw)
@@ -49,6 +48,7 @@ class CameraWorkspace(AbstractWorkspace):
         if not val:
             self.overlay.clear()
 
+    # TODO: remove legacy ocde
     # def _on_frame_received(self, name, frame):
     #     if name == self.cam_name:
     #         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

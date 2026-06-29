@@ -97,11 +97,23 @@ class UVCCamera(AbstractCamera):
     def set_gain(self, value):
         self.cap.set(cv2.CAP_PROP_GAIN, value)
 
+    # def set_auto_exposure(self, is_auto: bool):
+    #     if self.cap:
+    #         val = 3 if is_auto else 1
+    #         self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, val)
+    #         print(f"Автоэкспозиция: {'ВКЛ' if is_auto else 'ВЫКЛ'}")
+
     def set_auto_exposure(self, is_auto: bool):
-        if self.cap:
+        if not self.cap or not self.cap.isOpened():
+            return
+
+        if sys.platform.startswith("win"):
+            val = 1 if is_auto else 0
+        else:
             val = 3 if is_auto else 1
-            self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, val)
-            print(f"Автоэкспозиция: {'ВКЛ' if is_auto else 'ВЫКЛ'}")
+
+        success = self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, val)
+        print(f"Автоэкспозиция: {'ВКЛ' if is_auto else 'ВЫКЛ'} (Статус: {success})")
 
     def close(self):
         if self.cap:

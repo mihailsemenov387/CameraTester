@@ -4,6 +4,8 @@ from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+# TODO: cosmetic refactor
+
 
 class Plotter(QWidget):
     def __init__(self):
@@ -12,7 +14,7 @@ class Plotter(QWidget):
 
         self.fit_series_x = []
         self.fit_series_y = []
-        # График X
+        #  X
         self.series_x_raw = QLineSeries()
         self.series_x_raw.setName("Сырые данные X")
 
@@ -26,14 +28,14 @@ class Plotter(QWidget):
         self.chart_x.createDefaultAxes()
         self.chart_x.setTitle("Профиль по X")
 
-        # График Y
+        #  Y
         self.series_y_raw = QLineSeries()
         self.series_y_raw.setName("Сырые данные Y")
 
         self.series_y_fit = QLineSeries()
         self.series_y_fit.setName("Гаусс Y")
-        # Зеленый цвет для Y
-        self.series_y_fit.setPen(QPen(QColor(Qt.GlobalColor.green), 2))
+        #  Y
+        self.series_y_fit.setPen(QPen(QColor(Qt.GlobalColor.blue), 2))
 
         self.chart_y = QChart()
         self.chart_y.addSeries(self.series_y_raw)
@@ -87,5 +89,4 @@ class Plotter(QWidget):
             )
 
         except Exception as e:
-            # Теперь мы увидим реальную ошибку, если она случится внутри отрисовки
             print(f"Plotter Render Error: {e}")

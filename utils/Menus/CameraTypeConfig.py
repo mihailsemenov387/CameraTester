@@ -16,7 +16,6 @@ class UVCConfigPage(QWidget):
         self.combo = QComboBox()
         layout.addWidget(self.combo)
 
-        # Сразу запускаем поиск камер
         QTimer.singleShot(100, self.refresh)
 
     def refresh(self):
