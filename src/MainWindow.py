@@ -34,29 +34,6 @@ class Dashboard(QMainWindow):
 
         self.modules_menu = menu_bar.addMenu("Модули")
 
-    # TODO: rewrite
-    # def load_workspaces(self):
-    #     self.modules_menu.clear()
-
-    #     for loader, module_name, is_pkg in pkgutil.iter_modules(workspaces.__path__):
-    #         if is_pkg:
-    #             try:
-    #                 module = importlib.import_module(f"workspaces.{module_name}")
-
-    #                 if hasattr(module, "WORKSPACE_CLASS"):
-    #                     cls = getattr(module, "WORKSPACE_CLASS")
-
-    #                     title = getattr(module, "WORKSPACE_TITLE", module_name)
-    #                     action = QAction(title, self)
-    #                     action.triggered.connect(
-    #                         lambda chk=False, c=cls, t=title: self.add_workspace_tab(
-    #                             c, t
-    #                         )
-    #                     )
-    #                     self.modules_menu.addAction(action)
-
-    #             except Exception as e:
-    #                 print(f"Ошибка загрузки модуля {module_name}: {e}")
     def load_workspaces(self):
         self.modules_menu.clear()
 
@@ -72,7 +49,6 @@ class Dashboard(QMainWindow):
         for title, cls in WORKSPACE_REGISTRY.items():
             action = QAction(title, self)
 
-            # lambda chk=False, c=cls, t=title нужна, чтобы "заморозить" переменные в цикле
             action.triggered.connect(
                 lambda chk=False, c=cls, t=title: self.add_workspace_tab(c, t)
             )

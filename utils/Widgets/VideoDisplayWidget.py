@@ -21,10 +21,8 @@ class VideoDisplayWidget(QWidget):
         painter = QPainter(self)
         rect = self.rect()
 
-        # 1. Сначала ВСЕГДА заливаем весь виджет черным
         painter.fillRect(rect, Qt.GlobalColor.black)
 
-        # 2. И только если картинка есть и она не пустая — рисуем её поверх
         if self.current_image and not self.current_image.isNull():
             scaled_img = self.current_image.scaled(
                 rect.size(),

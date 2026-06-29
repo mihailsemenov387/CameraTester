@@ -2,13 +2,14 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 
+# TODO: deepseek code
 class DetachableTabWidget(QTabWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMovable(True)
 
-        self.setTabsClosable(True)  # Включаем крестики на вкладках
-        self.tabCloseRequested.connect(self.close_tab)  #
+        self.setTabsClosable(True)
+        self.tabCloseRequested.connect(self.close_tab)
 
         self.tabBarDoubleClicked.connect(self.detach_tab)
         self.detached_windows = {}
@@ -30,7 +31,6 @@ class DetachableTabWidget(QTabWidget):
         self.removeTab(index)
         layout.addWidget(widget)
 
-        # ВАЖНО: Qt прячет виджет при удалении из таба, нужно показать его обратно
         widget.show()
 
         def reattach(event):
@@ -55,11 +55,8 @@ class DetachableTabWidget(QTabWidget):
             widget.deleteLater()
 
     def close_all_detached(self):
-        # Создаем копию списка окон, чтобы избежать ошибок при удалении во время цикла
         windows = list(self.detached_windows.values())
         for win in windows:
-            # Отключаем reattach перед закрытием, чтобы вкладки не пытались
-            # вернуться в уже закрывающееся главное окно
             win.closeEvent = lambda event: event.accept()
             win.close()
             win.deleteLater()

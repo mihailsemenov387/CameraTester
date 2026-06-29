@@ -116,14 +116,16 @@ class CameraThread(QThread):
             if frame is None:
                 continue
 
-            # ВЕЩАЕМ В ШИНУ НАПРЯМУЮ: "Я Камера Х, вот мой кадр"
+            # send raw frame to bus
             GlobalBus.instance().raw_frame_sent.emit(self.cam_name, frame)
 
-            # Конвертация для UI (опционально, можно тоже через шину)
+            # TODO: fix if lag (use opengl thing and raw_frame)
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb_frame.shape
-            q_img = QImage(rgb_frame.data, w, h, ch * w, QImage.Format_RGB888)
-            self.frame_ready.emit(q_img.copy())
+
+            temp_img = QImage(rgb_frame.data, w, h, ch * w, QImage.Format_RGB888)
+            q_img = QImage(temp_img)  # for copy
+            self.frame_ready.emit(q_img)
 
         self.camera.close()
 
@@ -131,9 +133,8 @@ class CameraThread(QThread):
         self.running = False
 
         if not self.wait(500):
-            print("Поток камеры завис в OpenCV, принудительное завершение...")
             self.terminate()
-            self.wait()  # Ждем завершения после терминации, пока метод run() реально завершится
+            self.wait()
 
 
 class CameraFactory:
