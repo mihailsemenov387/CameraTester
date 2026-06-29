@@ -1,3 +1,4 @@
+import sys
 from abc import ABC, abstractmethod
 
 import cv2
@@ -55,9 +56,24 @@ class UVCCamera(AbstractCamera):
         self.index = index
         self.cap = None
 
+    # def open(self):
+    #     self.cap = cv2.VideoCapture(self.index)
+    #     return self.cap.isOpened()
+
     def open(self):
-        self.cap = cv2.VideoCapture(self.index)
-        return self.cap.isOpened()
+        if sys.platform.startswith("win"):
+            backend = cv2.CAP_DSHOW
+        else:
+            backend = cv2.CAP_ANY
+
+        self.cap = cv2.VideoCapture(self.index, backend)
+
+        if not self.cap.isOpened():
+            return False
+
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+
+        return True
 
     def get_fps(self):
         return self.cap.get(cv2.CAP_PROP_FPS)
@@ -94,7 +110,7 @@ class UVCCamera(AbstractCamera):
 
 class CameraThread(QThread):
     # Оставляем frame_ready только для локальной быстрой отрисовки, если нужно
-    frame_ready = Signal(QImage)
+    # frame_ready = Signal(QImage)
     camera_opened = Signal()
     camera_error = Signal(str)
 
@@ -120,12 +136,12 @@ class CameraThread(QThread):
             GlobalBus.instance().raw_frame_sent.emit(self.cam_name, frame)
 
             # TODO: fix if lag (use opengl thing and raw_frame)
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            h, w, ch = rgb_frame.shape
+            # rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # h, w, ch = rgb_frame.shape
 
-            temp_img = QImage(rgb_frame.data, w, h, ch * w, QImage.Format_RGB888)
-            q_img = QImage(temp_img)  # for copy
-            self.frame_ready.emit(q_img)
+            # temp_img = QImage(rgb_frame.data, w, h, ch * w, QImage.Format_RGB888)
+            # q_img = QImage(temp_img)  # for copy
+            # self.frame_ready.emit(q_img)
 
         self.camera.close()
 

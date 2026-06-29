@@ -1,6 +1,6 @@
 import cv2
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QVBoxLayout
 
 from utils.Signals import GlobalBus
@@ -49,12 +49,20 @@ class CameraWorkspace(AbstractWorkspace):
         if not val:
             self.overlay.clear()
 
+    # def _on_frame_received(self, name, frame):
+    #     if name == self.cam_name:
+    #         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #         h, w, ch = rgb.shape
+    #         qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888).copy()
+    #         self.video_container.update_image(qimg)
+
     def _on_frame_received(self, name, frame):
         if name == self.cam_name:
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb.shape
-            qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888).copy()
-            self.video_container.update_image(qimg)
+            qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(qimg)
+            self.video_container.update_image(pixmap)
 
     def _on_results_received(self, name, data):
         if name == self.cam_name and self.is_draw_fit:
