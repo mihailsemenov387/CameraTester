@@ -1,5 +1,7 @@
 import importlib
 import pkgutil
+import sys
+from pathlib import Path
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QMessageBox
@@ -34,21 +36,70 @@ class Dashboard(QMainWindow):
 
         self.modules_menu = menu_bar.addMenu("Модули")
 
+    # def load_workspaces(self):
+    #     self.modules_menu.clear()
+
+    #     prefix = workspaces.__name__ + "."
+    #     for loader, module_name, is_pkg in pkgutil.walk_packages(
+    #         workspaces.__path__, prefix
+    #     ):
+    #         try:
+    #             importlib.import_module(module_name)
+    #         except Exception as e:
+    #             print(f"Ошибка загрузки модуля {module_name}: {e}")
+
+    #     for title, cls in WORKSPACE_REGISTRY.items():
+    #         action = QAction(title, self)
+
+    #         action.triggered.connect(
+    #             lambda chk=False, c=cls, t=title: self.add_workspace_tab(c, t)
+    #         )
+    #         self.modules_menu.addAction(action)
+
     def load_workspaces(self):
+
         self.modules_menu.clear()
 
-        prefix = workspaces.__name__ + "."
-        for loader, module_name, is_pkg in pkgutil.walk_packages(
-            workspaces.__path__, prefix
-        ):
-            try:
-                importlib.import_module(module_name)
-            except Exception as e:
-                print(f"Ошибка загрузки модуля {module_name}: {e}")
+        # 1. Определяем, откуда запущен код (из папки проекта или из .exe)
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            base_path = Path(sys._MEIPASS)
+        else:
+            # Если запускаем через интерпретатор, берем корень проекта
+            base_path = (
+                Path(__file__).resolve().parent.parent
+            )  # Подкрутите вложенность ( parent ), чтобы выйти в корень проекта
 
+        # 2. Задаем папки для сканирования плагинов
+        plugin_dirs = [base_path / "src" / "CameraWorkspace", base_path / "workspaces"]
+
+        print(f"[DEBUG] Сканируем папки на наличие воркспейсов: {plugin_dirs}")
+
+        # 3. Ищем все файлы workspace.py в этих папках
+        for p_dir in plugin_dirs:
+            if not p_dir.exists():
+                continue
+
+            # Ищем рекурсивно файлы с именем workspace.py
+            for path in p_dir.rglob("workspace.py"):
+                # Превращаем путь к файлу в относительный путь импорта Python
+                # Например: workspaces/AnalysisWorkspace/workspace.py -> workspaces.AnalysisWorkspace.workspace
+                try:
+                    rel_path = path.relative_to(base_path)
+                    module_path = ".".join(rel_path.with_suffix("").parts)
+
+                    # Будим файл, чтобы сработал ваш декоратор!
+                    importlib.import_module(module_path)
+                    print(f"[DEBUG] Авто-импорт успешной: {module_path}")
+                except Exception as e:
+                    print(f"[DEBUG] Не удалось загрузить {path.name}: {e}")
+
+        print(
+            f"[DEBUG] Реестр WORKSPACE_REGISTRY после автоскана: {WORKSPACE_REGISTRY}"
+        )
+
+        # 4. Строим меню из декоратора
         for title, cls in WORKSPACE_REGISTRY.items():
             action = QAction(title, self)
-
             action.triggered.connect(
                 lambda chk=False, c=cls, t=title: self.add_workspace_tab(c, t)
             )
