@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QLabel,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
 )
@@ -39,6 +40,7 @@ from .CameraTypeConfig import CAMERA_CONFIG_REGISTRY
 #         self.type_combo.currentIndexChanged.connect(self.pages.setCurrentIndex)
 
 
+# FIXME: selection dialog size
 class CameraSelectionDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -51,6 +53,11 @@ class CameraSelectionDialog(QDialog):
         self.main_layout.addWidget(self.type_combo)
 
         self.pages = QStackedWidget()
+
+        self.pages.setSizePolicy(
+            self.pages.sizePolicy().horizontalPolicy(), QSizePolicy.Policy.Minimum
+        )
+
         self.main_layout.addWidget(self.pages)
 
         self.load_workspaces()
@@ -62,6 +69,7 @@ class CameraSelectionDialog(QDialog):
 
         # Переключаем страницы при изменении выбора в комбобоксе
         self.type_combo.currentIndexChanged.connect(self.pages.setCurrentIndex)
+        self.adjustSize()
 
     def load_workspaces(self):
         for typ, (title, cls) in CAMERA_CONFIG_REGISTRY.items():

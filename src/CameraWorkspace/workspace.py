@@ -59,13 +59,31 @@ class CameraWorkspace(AbstractWorkspace):
         if not val:
             self.overlay.clear()
 
+    # def _on_frame_received(self, name, frame):
+    #     if name == self.cam_name:
+    #         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    #         h, w, ch = rgb.shape
+    #         qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
+    #         pixmap = QPixmap.fromImage(qimg)
+    #         self.video_container.update_image(pixmap)
+
     def _on_frame_received(self, name, frame):
-        if name == self.cam_name:
+        if name != self.cam_name:
+            return
+
+        try:
+            # Конвертация цветов в OpenCV (работает на чистом C++ под капотом, GIL отдыхает)
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb.shape
-            qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(qimg)
-            self.video_container.update_image(pixmap)
+
+            # Создаем QImage и жестко изолируем память через .copy()
+            qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888).copy()
+
+            # Отдаем в виджет. Никаких тяжелых QPixmap.fromImage здесь больше нет!
+            self.video_container.update_image(qimg)
+
+        except Exception as e:
+            print(f"Ошибка подготовки кадра: {e}")
 
     def _on_results_received(self, name, data):
         if name == self.cam_name and self.is_draw_fit:

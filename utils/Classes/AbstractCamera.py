@@ -1,4 +1,5 @@
 import sys
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
@@ -97,6 +98,7 @@ class CameraThread(QThread):
 
             # send raw frame to bus
             GlobalBus.instance().raw_frame_sent.emit(self.cam_name, frame)
+            time.sleep(0.05)
 
         self.camera.close()
 
