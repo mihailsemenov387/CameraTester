@@ -45,16 +45,23 @@ class CameraSettingsWidget(QWidget):
 
         slider = QSlider(Qt.Orientation.Horizontal)
         slider.setRange(param.min_value, param.max_value)
+        slider.setSingleStep(param.step_value)
         slider.setValue(param.current_value)
 
         spinbox = QSpinBox()
         spinbox.setRange(param.min_value, param.max_value)
+        spinbox.setSingleStep(param.step_value)
         spinbox.setValue(param.current_value)
         spinbox.setFixedWidth(50)
 
         slider.valueChanged.connect(spinbox.setValue)
+
         spinbox.valueChanged.connect(slider.setValue)
-        slider.valueChanged.connect(param.setter)
+        spinbox.valueChanged.connect(param.setter)
+
+        slider.sliderReleased.connect(
+            lambda: spinbox.valueChanged.emit(spinbox.value())
+        )
 
         row_layout.addWidget(slider)
         row_layout.addWidget(spinbox)

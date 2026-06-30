@@ -7,7 +7,18 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+CAMERA_CONFIG_REGISTRY = {}
 
+
+def register_congig_page(title: str, typ: str):
+    def wrapper(cls):
+        CAMERA_CONFIG_REGISTRY[typ] = (title, cls)
+        return cls
+
+    return wrapper
+
+
+@register_congig_page(title="USB Camera(UVC)", typ="UVC")
 class UVCConfigPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -27,6 +38,7 @@ class UVCConfigPage(QWidget):
         return {"index": self.combo.currentData(), "name": self.combo.currentText()}
 
 
+@register_congig_page("RTSP Stream", "RTSP")
 class RTSPConfigPage(QWidget):
     def __init__(self):
         super().__init__()
