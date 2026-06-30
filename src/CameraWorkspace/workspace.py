@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QDockWidget, QMainWindow, QVBoxLayout
 
+from utils.Classes.AbstractCamera import CameraThread
 from utils.Signals import GlobalBus
 from utils.Widgets.VideoDisplayWidget import VideoDisplayWidget
 from utils.Widgets.VideoOverlayWidget import VideoOverlayWidget
@@ -15,7 +16,8 @@ class CameraWorkspace(AbstractWorkspace):
     def __init__(self, camera_obj, name="Camera"):
         super().__init__()
         self.cam_name = name
-        self.thread = None
+        self.thread = CameraThread(camera_obj, name)
+
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
 
         ws_menu = self.menuBar()
@@ -30,11 +32,20 @@ class CameraWorkspace(AbstractWorkspace):
 
         self.is_draw_fit = False
 
+        # self.dock_hw = QDockWidget("Настройки камеры", self)
+        # self.settings_ui = CameraSettingsWidget(camera_obj)
+        # self.dock_hw.setWidget(self.settings_ui)
+        # self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_hw)
+        # self.view_menu.addAction(self.dock_hw.toggleViewAction())
+
+        # ------------ new settings init ---------
         self.dock_hw = QDockWidget("Настройки камеры", self)
         self.settings_ui = CameraSettingsWidget(camera_obj)
         self.dock_hw.setWidget(self.settings_ui)
+        self.thread.camera_opened.connect(self.settings_ui.setup_ui)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_hw)
         self.view_menu.addAction(self.dock_hw.toggleViewAction())
+        # ------------ new settings init ---------
 
         bus = GlobalBus.instance()
         bus.raw_frame_sent.connect(self._on_frame_received)
@@ -47,14 +58,6 @@ class CameraWorkspace(AbstractWorkspace):
         self.is_draw_fit = val
         if not val:
             self.overlay.clear()
-
-    # TODO: remove legacy ocde
-    # def _on_frame_received(self, name, frame):
-    #     if name == self.cam_name:
-    #         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    #         h, w, ch = rgb.shape
-    #         qimg = QImage(rgb.data, w, h, ch * w, QImage.Format_RGB888).copy()
-    #         self.video_container.update_image(qimg)
 
     def _on_frame_received(self, name, frame):
         if name == self.cam_name:

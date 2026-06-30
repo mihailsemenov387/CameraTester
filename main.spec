@@ -1,29 +1,32 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_submodules
 
+# Эта магия автоматически найдет все .py файлы внутри папки workspaces
+# и скажет PyInstaller'у скомпилировать их в байт-код.
+# Теперь, если вы добавите новый воркспейс, .spec файл менять НЕ ПРИДЕТСЯ!
+dynamic_workspaces = collect_submodules("workspaces")
 
 a = Analysis(
     ["src/main.py"],
-    pathex=[".", "src"],
+    pathex=[".", "src"],  # Пути поиска импортов
     binaries=[],
-    datas=[
-        ("src/CameraWorkspace", "src/CameraWorkspace"),
-        ("workspaces", "workspaces"),
-    ],
+    # ВНИМАНИЕ: Папки с исходным кодом (.py) здесь быть не должно!
+    # datas нужен только если в папке workspaces есть НЕ-код (например, иконки .png).
+    # Если там только код, оставляем список пустым.
+    datas=[],
     hiddenimports=[
         "shiboken6",
+        # Явные зависимости из utils (оставляем для надежности)
         "utils",
-        "utils.Classes",
         "utils.Classes.AbstractCamera",
-        "utils.Widgets",
         "utils.Widgets.VideoDisplayWidget",
         "utils.Signals",
-        "CameraWorkspace",
-        "CameraWorkspace.workspace",
-        "CameraWorkspace.CameraSettingsWidget",
-        "workspaces",
-        "workspaces.AnalysisWorkspace",
-        "workspaces.AnalysisWorkspace.workspace",
-    ],
+        # Ручной импорт камеры (хотя при "from .CameraWorkspace.workspace import..."
+        # в MainWindow PyInstaller должен находить её сам, но оставим для страховки)
+        "src.CameraWorkspace.workspace",
+        "src.CameraWorkspace.CameraSettingsWidget",
+    ]
+    + dynamic_workspaces,  # <--- Динамически добавляем все воркспейсы в скрытые импорты
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -44,7 +47,7 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=False,  # Черное окно консоли отключено
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -52,6 +55,7 @@ exe = EXE(
     entitlements_file=None,
     # icon='icon.ico'
 )
+
 coll = COLLECT(
     exe,
     a.binaries,

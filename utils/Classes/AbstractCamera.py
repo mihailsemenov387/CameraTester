@@ -1,5 +1,7 @@
 import sys
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Callable, Optional
 
 import cv2
 import numpy as np
@@ -7,6 +9,21 @@ from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QImage
 
 from utils.Signals import GlobalBus
+
+
+# структура для настроек камеры
+@dataclass
+class CameraParameter:
+    id: str  # Уникальный ключ (например, "exposure")
+    label: str  # Имя для интерфейса (например, "Экспозиция")
+    min_value: Any
+    max_value: Any
+    current_value: Any  # ТЕКУЩЕЕ значение из камеры
+    default_value: Any
+    setter: Callable[[Any], None]  # Ссылка на метод установки
+    has_auto: bool = False  # Есть ли авто-режим
+    auto_setter: Optional[Callable[[bool], None]] = None  # Стод авто-режима
+    is_auto_now: bool = False  # ТЕКУЩЕЕ состояние авто-режима
 
 
 class AbstractCamera(ABC):
@@ -48,6 +65,10 @@ class AbstractCamera(ABC):
 
     @abstractmethod
     def close(self):
+        pass
+
+    @abstractmethod
+    def get_parameters(self):
         pass
 
 
@@ -114,6 +135,75 @@ class UVCCamera(AbstractCamera):
 
         success = self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, val)
         print(f"Автоэкспозиция: {'ВКЛ' if is_auto else 'ВЫКЛ'} (Статус: {success})")
+
+    def get_parameters(self) -> dict[str, CameraParameter]:
+        # ЕСЛИ КАМЕРА ЕЩЕ НЕ ОТКРЫТА — берем безопасные дефолты и не трогаем self.cap
+        # if not self.cap or not self.cap.isOpened():
+        #     curr_exp, curr_gam, curr_gain, curr_cnt, curr_brg = -5, 100, 1, 127, 0
+        #     is_auto_now = False
+        # else:
+        # Если открыта — честно опрашиваем железку
+        curr_exp = self.cap.get(cv2.CAP_PROP_EXPOSURE)
+        curr_gam = self.cap.get(cv2.CAP_PROP_GAMMA)
+        curr_gain = self.cap.get(cv2.CAP_PROP_GAIN)
+        curr_cnt = self.cap.get(cv2.CAP_PROP_CONTRAST)
+        curr_brg = self.cap.get(cv2.CAP_PROP_BRIGHTNESS)
+
+        auto_val = self.cap.get(cv2.CAP_PROP_AUTO_EXPOSURE)
+        is_auto_now = (
+            (auto_val == 1) if sys.platform.startswith("win") else (auto_val == 3)
+        )
+
+        return {
+            "exposure": CameraParameter(
+                id="exposure",
+                label="Экспозиция:",
+                min_value=-10,
+                max_value=0,
+                default_value=-5,
+                current_value=int(curr_exp),
+                setter=self.set_exposure,
+                has_auto=True,
+                auto_setter=self.set_auto_exposure,
+                is_auto_now=is_auto_now,
+            ),
+            "gamma": CameraParameter(
+                id="gamma",
+                label="Gamma:",
+                min_value=90,
+                max_value=150,
+                default_value=100,
+                current_value=int(curr_gam),
+                setter=self.set_gamma,
+            ),
+            "gain": CameraParameter(
+                id="gain",
+                label="Gain:",
+                min_value=4,
+                max_value=8,
+                default_value=1,
+                current_value=int(curr_gain),
+                setter=self.set_gain,
+            ),
+            "contrast": CameraParameter(
+                id="contrast",
+                label="Contrast:",
+                min_value=0,
+                max_value=255,
+                default_value=127,
+                current_value=int(curr_cnt),
+                setter=self.set_contrast,
+            ),
+            "brightness": CameraParameter(
+                id="brightness",
+                label="Brightness:",
+                min_value=-127,
+                max_value=127,
+                default_value=0,
+                current_value=int(curr_brg),
+                setter=self.set_brightness,
+            ),
+        }
 
     def close(self):
         if self.cap:
