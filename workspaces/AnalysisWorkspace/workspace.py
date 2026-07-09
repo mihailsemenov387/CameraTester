@@ -48,23 +48,20 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.plotter.update_is_draw(mode != 0 )
         if mode == 0:
             self.analysis_timer.stop()
+            self.plotter.clear_canvas()
         else:
             self.analysis_timer.start(self.settings_ui.speed_spin.value())
+
 
     def _buffer_frame(self, cam_name, frame):
         self.latest_frame = frame
         self.latest_cam_name = cam_name
 
-    def _toggle_timer(self, enabled):
-        if enabled:
-            interval = self.settings_ui.speed_spin.value()
-            self.analysis_timer.start(interval)
-        else:
-            self.analysis_timer.stop()
 
     # TODO: add unified interface for send/recive analysis results
     def _do_analysis_step(self):
         if self.latest_frame is None:
+            self.plotter.update_data() # clear canvas
             return
 
         if self.current_mode == 1:

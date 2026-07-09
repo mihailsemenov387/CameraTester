@@ -72,19 +72,23 @@ class Plotter(QWidget):
     def update_is_draw(self,val):
         self._is_draw = val
 
-    def update_data(self, data):
+    def clear_canvas(self):
+        # Если рисовать запрещено, очищаем всё и выходим
+        print("[DEBUG]: clear canvas")
+        self.series_x_raw.clear()
+        self.series_x_fit.clear()
+        self.series_x_max_line.clear()
+        self.series_y_raw.clear()
+        self.series_y_fit.clear()
+        self.series_y_max_line.clear()
+
+    def update_data(self, data: dict = {}):
         if not data or "x_raw" not in data or "y_raw" not in data:
-             return
+            return
 
         try:
-            if not self._is_draw:
-                # Если рисовать запрещено, очищаем всё и выходим
-                self.series_x_raw.clear()
-                self.series_x_fit.clear()
-                self.series_x_max_line.clear()
-                self.series_y_raw.clear()
-                self.series_y_fit.clear()
-                self.series_y_max_line.clear()
+            if self._is_draw == False:
+                self.clear_canvas()
                 return
 
             # 1. Рисуем сырые данные
