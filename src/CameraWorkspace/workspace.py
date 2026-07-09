@@ -13,10 +13,13 @@ from .CameraSettingsWidget import CameraSettingsWidget
 
 
 class CameraWorkspace(AbstractWorkspace):
-    def __init__(self, camera_obj, name="Camera"):
+    def __init__(self, camera_obj, name=None):
         super().__init__()
-        self.cam_name = name
-        self.thread = CameraThread(camera_obj, name)
+
+        self.cam_name = name or "Cam name doesnt set in camera config!"
+
+        print(f"[DEBUG] connected to {self.cam_name}")
+        self.thread = CameraThread(camera_obj, self.cam_name)
 
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
 
@@ -72,6 +75,7 @@ class CameraWorkspace(AbstractWorkspace):
             return
 
         try:
+
             # Конвертация цветов в OpenCV (работает на чистом C++ под капотом, GIL отдыхает)
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             h, w, ch = rgb.shape

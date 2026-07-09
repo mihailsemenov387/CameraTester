@@ -114,7 +114,6 @@ class VideoDisplayWidget(QWidget):
             # 1. Конвертируем QImage в Pixmap строго В МОМЕНТ ОТРИСОВКИ
             # Qt делает это на уровне оптимизированного C++ кода под капотом, обходя GIL
             pixmap = QPixmap.fromImage(self.current_image)
-
             cam_w = pixmap.width()
             cam_h = pixmap.height()
 
@@ -132,3 +131,57 @@ class VideoDisplayWidget(QWidget):
             # 3. Отрисовка через матрицу трансформации
             painter.scale(scale, scale)
             painter.drawPixmap(int(x), int(y), pixmap)
+
+# from PySide6.QtCore import Qt
+# from PySide6.QtGui import QImage, QPainter, QPixmap
+# from PySide6.QtWidgets import QSizePolicy, QWidget
+
+
+# class VideoDisplayWidget(QWidget):
+#     def __init__(self):
+#         super().__init__()
+#         self.current_pixmap = None  # Храним уже готовый для GPU Pixmap
+#         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+#         self.setMinimumSize(320, 240)
+
+#     def update_image(self, image: QImage):
+#         """Принимает QImage, сразу переводит в QPixmap и запрашивает перерисовку."""
+#         if image and not image.isNull():
+#             # Конвертируем в потокe получения кадра, освобождая paintEvent от лишней работы
+#             self.current_pixmap = QPixmap.fromImage(image)
+#         else:
+#             self.current_pixmap = None
+#         self.update()
+
+#     def paintEvent(self, event):
+#         painter = QPainter(self)
+#         # Включаем сглаживание для качественного масштабирования видеокартой
+#         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+#         rect = self.rect()
+#         # Заливаем фон черным
+#         painter.fillRect(rect, Qt.GlobalColor.black)
+
+#         if self.current_pixmap and not self.current_pixmap.isNull():
+#             cam_w = self.current_pixmap.width()
+#             cam_h = self.current_pixmap.height()
+
+#             # Вычисляем коэффициент масштабирования с сохранением пропорций
+#             scale_x = rect.width() / cam_w
+#             scale_y = rect.height() / cam_h
+#             scale = min(scale_x, scale_y)
+
+#             # Вычисляем размеры финальной картинки на экране
+#             target_w = cam_w * scale
+#             target_h = cam_h * scale
+
+#             # Центрируем картинку в окне (БЕЗ деления на масштаб!)
+#             x = (rect.width() - target_w) / 2
+#             y = (rect.height() - target_h) / 2
+
+#             # Применяем трансформацию масштаба к художнику
+#             painter.scale(scale, scale)
+
+#             # Пересчитываем координаты X и Y под измененную матрицу координат
+#             # Рисуем pixmap, и он встанет ровно по центру
+#             painter.drawPixmap(int(x / scale), int(y / scale), self.current_pixmap)

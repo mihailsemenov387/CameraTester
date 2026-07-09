@@ -91,7 +91,7 @@ class Dashboard(QMainWindow):
             self.add_camera(config)
 
     def add_camera(self, config):
-        name = config.get("name")
+        name = config.get("name") or "Cam name doesnt set in camera config!"
         camera = CameraFactory.create(config)
         if not camera:
             return

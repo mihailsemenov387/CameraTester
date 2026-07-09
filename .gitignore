@@ -5,3 +5,5 @@
 *.pyd
 build/
 dist/
+*.nix
+*.sh

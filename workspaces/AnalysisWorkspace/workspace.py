@@ -33,10 +33,19 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.settings_ui.speed_changed.connect(self.analysis_timer.setInterval)
         self.settings_ui.mode_changed.connect(self._update_mode)
 
+        # ceckbox for inner plotter logic
+        # self.settings_ui.is_draw_lines_on_plot.toggled.connect(self.plotter.update_line_vis)
+        # self.plotter.intensity_calculated.connect(GlobalBus.instance().max_intensity_found.emit)
+
+        self.settings_ui.is_draw_lines_on_plot.toggled.connect(self.plotter.update_line_vis)
+        self.plotter.intensity_calculated.connect(self.settings_ui._update_focus_indicators)
+
         GlobalBus.instance().raw_frame_sent.connect(self._buffer_frame)
 
+    # do case switch
     def _update_mode(self, mode):
         self.current_mode = mode
+        self.plotter.update_is_draw(mode != 0 )
         if mode == 0:
             self.analysis_timer.stop()
         else:

@@ -60,7 +60,7 @@ class CameraSelectionDialog(QDialog):
 
         self.main_layout.addWidget(self.pages)
 
-        self.load_workspaces()
+        self.load_camera_config_page()
 
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttons.accepted.connect(self.accept)
@@ -71,7 +71,7 @@ class CameraSelectionDialog(QDialog):
         self.type_combo.currentIndexChanged.connect(self.pages.setCurrentIndex)
         self.adjustSize()
 
-    def load_workspaces(self):
+    def load_camera_config_page(self):
         for typ, (title, cls) in CAMERA_CONFIG_REGISTRY.items():
             self._create_item(title, typ, cls)
 

@@ -43,6 +43,18 @@ class UVCConfigPage(QWidget):
         return {"index": self.combo.currentData(), "name": self.combo.currentText()}
 
 
+
+@register_congig_page(title="Fake Camera", typ="FAKECAM")
+class FakeCamConfig(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.addStretch()
+
+    def get_values(self):
+        return {"name": "Fake camera"}
+
+
 @register_congig_page("RTSP Stream", "RTSP")
 class RTSPConfigPage(QWidget):
     def __init__(self):
