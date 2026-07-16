@@ -203,8 +203,9 @@ def _get_base_profiles(img):
         gray = img
 
     norm = gray.astype(float)
-    bg = np.mean(norm[0:15, 0:15])
-    norm = np.clip(norm - bg, 0, None)
+    # FIXME: if needed
+    # bg = np.mean(norm[0:15, 0:15])
+    # norm = np.clip(norm - bg, 0, None)
     return (
         norm,
         np.arange(norm.shape[1]),

@@ -58,6 +58,7 @@ class RTSPConfigPage(QWidget):
         return {"url": self.url_input.text(), "name": "IP Camera"}
 
 
+# FIXME: cleanup and refactor
 @register_congig_page("Harvester camera", "HARVESTER")
 class HarvesterConfigPage(QWidget):
     def __init__(self):

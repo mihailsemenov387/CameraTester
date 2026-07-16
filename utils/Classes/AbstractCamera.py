@@ -22,7 +22,7 @@ class CameraParameter:
     current_value: Any
     setter: Callable[[Any], None]
     default_value: Any
-    step_value: int = 1  # НОВОЕ: шаг изменения для промышленных камер
+    step_value: int = 1
     has_auto: bool = False
     auto_setter: Optional[Callable[[bool], None]] = None
     is_auto_now: bool = False
@@ -81,7 +81,7 @@ class CameraThread(QThread):
     def __init__(self, camera: AbstractCamera, name: str):
         super().__init__()
         self.camera = camera
-        self.cam_name = name  # Теперь поток знает, как называется его камера
+        self.cam_name = name
         self.running = False
 
     def run(self):

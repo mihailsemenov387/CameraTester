@@ -9,7 +9,7 @@ from workspaces.AbstractWorkspace import AbstractWorkspace, register_workspace
 from .AnalysisSettingsWidget import AnalysisSettingsWidget
 
 
-@register_workspace(title="Аналитика профиля")
+@register_workspace(title="Анализ профиля")
 class AnalysisWorkspace(AbstractWorkspace):
     def __init__(self):
         super().__init__()
