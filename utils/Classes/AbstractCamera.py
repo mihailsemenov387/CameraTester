@@ -11,7 +11,7 @@ from PySide6.QtGui import QImage
 
 from utils.Signals import GlobalBus
 
-
+#TODO: make dataclass for camra methoods????
 # структура для настроек камеры
 @dataclass
 class CameraParameter:
@@ -115,8 +115,9 @@ class CameraFactory:
     def _get_types():
         from .HarvesterCamera import HarvesterCamera
         from .UVCCamera import UVCCamera
+        from .FakeCamera import FakeAiryCamera
 
-        return {"UVC": UVCCamera, "HARVESTER": HarvesterCamera}
+        return {"UVC": UVCCamera, "HARVESTER": HarvesterCamera, "FAKECAM" : FakeAiryCamera}
 
     # @staticmethod
     # def create(config: dict) -> AbstractCamera:
@@ -148,6 +149,10 @@ class CameraFactory:
 
         if cam_type == "UVC":
             return camera_class(index=config.get("index"))
+
+
+        if cam_type == "FAKECAM":
+            return camera_class()
 
         if cam_type == "HARVESTER":
             return camera_class(
