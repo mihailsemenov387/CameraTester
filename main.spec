@@ -1,3 +1,5 @@
+# TODO: update and ceck
+
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_submodules
 
