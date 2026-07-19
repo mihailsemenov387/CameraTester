@@ -194,7 +194,7 @@ def process_many(img):
 
 def _get_base_profiles(img):
     if img is None:
-        return None
+        return None, None, None, None, None
     # Конвертация в ЧБ (обработка 3 или 4 каналов)
     if len(img.shape) == 3:
         code = cv2.COLOR_RGBA2GRAY if img.shape[2] == 4 else cv2.COLOR_BGR2GRAY

@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from harvesters.core import Harvester
+from harvesters.core import Harvester, TimeoutException
 
 from .AbstractCamera import AbstractCamera, CameraParameter
 
@@ -34,7 +34,7 @@ class HarvesterCamera(AbstractCamera):
             return None
 
         try:
-            with self.ia.fetch(timeout=10) as buffer:
+            with self.ia.fetch(timeout=0.03) as buffer:
                 payload = buffer.payload
                 if not payload or len(payload.components) == 0:
                     return None
@@ -46,7 +46,8 @@ class HarvesterCamera(AbstractCamera):
                 data = component.data.reshape(height, width).copy()
 
                 return data
-
+        except TimeoutException:
+            pass
         except Exception as e:
             print(f"[DEBUG] Ошибка в get_frame: {e}")
             return None

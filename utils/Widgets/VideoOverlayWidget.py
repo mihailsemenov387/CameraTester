@@ -111,14 +111,15 @@ class VideoOverlayWidget(QWidget):
 
         if self.is_draw_cross:
             # Получаем координаты и сразу добавляем 0.5 для выравнивания по центру пикселя
-            cx = res.get("mu_x", 0.0) + 0.5
-            cy = res.get("mu_y", 0.0) + 0.5
-
+            # cx = res.get("mu_x", 0.0) + 0.5
+            # cy = res.get("mu_y", 0.0) + 0.5
+            cx = res.get("mu_x", 0.0)
+            cy = res.get("mu_y", 0.0)
             # Включаем сглаживание, чтобы толщина 1.5 отрисовалась идеально мягко и точно
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             painter.setPen(QPen(QColor(255, 0, 0, 200), 1.5, Qt.PenStyle.SolidLine))
 
-            size = 6.0
+            size = 2.0
             gap = 1.0
 
             # Отрисовка по QPointF теперь будет идеально центрированной
@@ -126,7 +127,6 @@ class VideoOverlayWidget(QWidget):
             painter.drawLine(QPointF(cx + gap, cy), QPointF(cx + size, cy))
             painter.drawLine(QPointF(cx, cy - size), QPointF(cx, cy - gap))
             painter.drawLine(QPointF(cx, cy + gap), QPointF(cx, cy + size))
-
 
         self._draw_projections(painter, res, orig_w, orig_h)
 
