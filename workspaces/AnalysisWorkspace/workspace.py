@@ -13,7 +13,7 @@ from .AnalysisSettingsWidget import AnalysisSettingsWidget
 class AnalysisWorkspace(AbstractWorkspace):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Аналитика")
+        self.setWindowTitle("Анализ")
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
 
         self.current_mode = 0
@@ -68,29 +68,34 @@ class AnalysisWorkspace(AbstractWorkspace):
         self._is_new_frame = True
 
     # TODO: add unified interface for send/recive analysis results
+    # BUG: on low framerate big lag.
     def _do_analysis_step(self):
-        print(f"[DEBUG]: step")
         if self.latest_frame is None or not self._is_new_frame:
             return
 
+        # Сбрасываем сразу, убирая риск циклического наслоения
+        self._is_new_frame = False
+
         mode = self.current_mode
         res = None
+
         if mode == 0:
-            print(self.latest_frame)
             _, x, y, x_w, y_w = _get_base_profiles(self.latest_frame)
             self.plotter.update_data({"x_raw": x_w, "y_raw": y_w, "x": x, "y": y})
-            self._is_new_frame = False
+            return
+
         if mode == 1:
-            print(f"[DEBUG]: start frame processing")
+            # print(f"[DEBUG]: start frame processing")
             res = process(self.latest_frame)
-            print(self.latest_frame)
-            print(f"[DEBUG]: Frame processing finished")
+            # print(f"[DEBUG]: Frame processing finished")
         elif mode == 2:
-            print(f"[DEBUG]: start frame processing")
+            # print(f"[DEBUG]: start frame processing")
             res = process_many(self.latest_frame)
-            print(f"[DEBUG]: Frame processing finished")
+            # print(f"[DEBUG]: Frame processing finished")
 
         if res:
+            self.plotter.update_data(res)
+
             self._is_new_frame = False  # Больше этот кадр обрабатывать не нужно!
             self.plotter.update_data(res)
 

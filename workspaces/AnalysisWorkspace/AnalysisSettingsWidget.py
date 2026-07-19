@@ -34,7 +34,6 @@
 #         self.is_draw_lines_on_plot= QCheckBox("Отоброзить Линии на графике")
 
 
-
 #         self.speed_spin = QSpinBox()
 #         self.speed_spin.setRange(50, 2000)
 #         self.speed_spin.setSuffix(" ms")
@@ -63,14 +62,13 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QLabel,
+    QPushButton,
     QSpinBox,
     QVBoxLayout,
     QWidget,
-    QPushButton
 )
 
 from utils.Signals import GlobalBus
-
 
 
 class AnalysisSettingsWidget(QWidget):
@@ -98,19 +96,19 @@ class AnalysisSettingsWidget(QWidget):
         self.is_draw_lines_on_plot = QCheckBox("Отобразить линии на графике")
 
         # --- БЛОК ФОКУСИРОВКИ ---
-        layout.addWidget(QLabel("<b>Настройка фокуса (Интенсивность):</b>"))
+        layout.addWidget(QLabel("<b>Интенсивность:</b>"))
 
         # Метки для текущих значений
-        self.current_focus_label = QLabel("Текущая X: — | Y: —")
+        self.current_focus_label = QLabel("I X: | Y: ")
         layout.addWidget(self.current_focus_label)
 
         # Метки для рекордов (лучшего фокуса)
-        self.best_focus_label = QLabel("Лучшая  X: — | Y: —")
+        self.best_focus_label = QLabel("max I  X:  | Y: ")
         self.best_focus_label.setStyleSheet("color: green; font-weight: bold;")
         layout.addWidget(self.best_focus_label)
 
         # Кнопка сброса рекордов (чтобы начать настройку заново)
-        self.reset_focus_btn = QPushButton("Сбросить рекорд фокуса")
+        self.reset_focus_btn = QPushButton("Сбросить максимум")
         self.reset_focus_btn.clicked.connect(self._reset_focus_records)
         layout.addWidget(self.reset_focus_btn)
 
@@ -154,8 +152,8 @@ class AnalysisSettingsWidget(QWidget):
         """Сбрасывает накопленные рекорды интенсивности"""
         self._best_x = 0.0
         self._best_y = 0.0
-        self.current_focus_label.setText("Текущая X: — | Y: —")
-        self.best_focus_label.setText("Лучшая  X: — | Y: —")
+        self.current_focus_label.setText("I X:   | Y:  ")
+        self.best_focus_label.setText("max I  X:  | Y:  ")
 
     def _update_focus_indicators(self, intensity_x: float, intensity_y: float):
         """Слот принимает чистые значения максимальной интенсивности для фокуса"""
@@ -169,5 +167,9 @@ class AnalysisSettingsWidget(QWidget):
             self._best_y = intensity_y
 
         # Выводим «попугаи» интенсивности на экран
-        self.current_focus_label.setText(f"Текущая Интенс. X: {intensity_x:.1f} | Y: {intensity_y:.1f}")
-        self.best_focus_label.setText(f"Лучшая Интенс.  X: {self._best_x:.1f} | Y: {self._best_y:.1f}")
+        self.current_focus_label.setText(
+            f"I. X: {intensity_x:.1f} | Y: {intensity_y:.1f}"
+        )
+        self.best_focus_label.setText(
+            f"max I  X: {self._best_x:.1f} | Y: {self._best_y:.1f}"
+        )
