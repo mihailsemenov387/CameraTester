@@ -146,6 +146,7 @@ class Plotter(QWidget):
                 axis_y_max_limit = float(data["y"][-1])
 
                 # Ищем пик по X (высоту Гаусса X)
+                #TODO: рассчитывать локальный контраст в каждой точке (типа производная гауса?)
                 y_data_x = data["total_fit_x"] if has_fit_x else data["x_raw"]
                 max_y_val_x = np.max(y_data_x)  # Максимальная интенсивность по X
                 self._best_x = max(self._best_x, max_y_val_x)

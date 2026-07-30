@@ -51,7 +51,7 @@ class CameraWorkspace(AbstractWorkspace):
         # ------------ new settings init ---------
 
         bus = GlobalBus.instance()
-        bus.raw_frame_sent.connect(self._on_frame_received)
+        bus.raw_frame_sent.connect(self._on_frame_received) #TODO: сделать отправку части (сегмента кадра) {через выделение в виджете?  или  сделать через зум и drag}
         bus.analysis_results_sent.connect(self._on_results_received)
         bus.analysis_many_results_sent.connect(self._on_results_received)
 

@@ -139,14 +139,16 @@ class AnalysisSettingsWidget(QWidget):
         need_draw_cross = current_mode == 1
         GlobalBus.instance().is_draw_cross.emit(need_draw_cross)
 
-        is_processing_active = current_mode != 0
-        self.is_draw_lines_on_plot.setEnabled(is_processing_active)
-        self.reset_focus_btn.setEnabled(is_processing_active)
+        # is_processing_active = current_mode != 0
+        # self.is_draw_lines_on_plot.setEnabled(is_processing_active)
+        # self.reset_focus_btn.setEnabled(is_processing_active)
 
-        if not is_processing_active:
-            if self.is_draw_lines_on_plot.isChecked():
-                self.is_draw_lines_on_plot.setChecked(False)
-            self._reset_focus_records()
+        # if not is_processing_active:
+        #     if self.is_draw_lines_on_plot.isChecked():
+        #         #FIXME: temp
+        #         pass
+        #         self.is_draw_lines_on_plot.setChecked(False)
+        #     self._reset_focus_records()
 
     def _reset_focus_records(self):
         """Сбрасывает накопленные рекорды интенсивности"""
