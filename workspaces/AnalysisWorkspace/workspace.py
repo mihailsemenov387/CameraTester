@@ -17,6 +17,7 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.setDockOptions(QMainWindow.AnimatedDocks | QMainWindow.AllowTabbedDocks)
 
         self.current_mode = 0
+        self.analysis_enabled = True
         self.latest_frame = None
         self.latest_cam_name = None
         self._is_new_frame = False
@@ -34,6 +35,7 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.settings_ui.speed_changed.connect(self.analysis_timer.setInterval)
         self.analysis_timer.start(self.settings_ui.speed_spin.value())
         self.settings_ui.mode_changed.connect(self._update_mode)
+        self.settings_ui.analysis_enabled.connect(self._on_analysis_enabled)
 
         # ceckbox for inner plotter logic
         # self.settings_ui.is_draw_lines_on_plot.toggled.connect(self.plotter.update_line_vis)
@@ -49,7 +51,7 @@ class AnalysisWorkspace(AbstractWorkspace):
             self.settings_ui._update_focus_indicators
         )
 
-        GlobalBus.instance().raw_frame_sent.connect(self._buffer_frame)
+        GlobalBus.instance().frame_to_use.connect(self._buffer_frame)
 
     # do case switch
     def _update_mode(self, mode):
@@ -62,7 +64,19 @@ class AnalysisWorkspace(AbstractWorkspace):
         # else:
         # self.analysis_timer.start(self.settings_ui.speed_spin.value())
 
+    def _on_analysis_enabled(self, enabled):
+        self.analysis_enabled = enabled
+        if enabled:
+            self.analysis_timer.start(self.settings_ui.speed_spin.value())
+        else:
+            self.analysis_timer.stop()
+            self.latest_frame = None
+            self._is_new_frame = False
+            self.plotter.clear_canvas()
+
     def _buffer_frame(self, cam_name, frame):
+        if not self.analysis_enabled:
+            return
         self.latest_frame = frame
         self.latest_cam_name = cam_name
         self._is_new_frame = True
@@ -94,8 +108,6 @@ class AnalysisWorkspace(AbstractWorkspace):
             # print(f"[DEBUG]: Frame processing finished")
 
         if res:
-            self.plotter.update_data(res)
-
             self._is_new_frame = False  # Больше этот кадр обрабатывать не нужно!
             self.plotter.update_data(res)
 

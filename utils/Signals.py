@@ -3,6 +3,8 @@ from PySide6.QtCore import QObject, Signal
 
 class GlobalBus(QObject):
     raw_frame_sent = Signal(str, object)
+    # обрезанный по ROI кадр для анализа (ссылка на копию)
+    frame_to_use = Signal(str, object)
 
     analysis_results_sent = Signal(str, dict)
     analysis_many_results_sent = Signal(str, dict)

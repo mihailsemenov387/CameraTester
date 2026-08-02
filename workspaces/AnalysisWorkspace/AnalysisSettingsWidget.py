@@ -74,6 +74,7 @@ from utils.Signals import GlobalBus
 class AnalysisSettingsWidget(QWidget):
     speed_changed = Signal(int)
     mode_changed = Signal(int)
+    analysis_enabled = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -123,6 +124,10 @@ class AnalysisSettingsWidget(QWidget):
         self.speed_spin.valueChanged.connect(self.speed_changed.emit)
 
         layout.addWidget(QLabel("<b>Обработка:</b>"))
+        self.analysis_cb = QCheckBox("Анализ")
+        self.analysis_cb.setChecked(True)
+        self.analysis_cb.toggled.connect(self.analysis_enabled.emit)
+        layout.addWidget(self.analysis_cb)
         layout.addWidget(self.mode_combo)
         layout.addWidget(self.is_draw_fit)
         layout.addWidget(self.is_draw_lines_on_plot)

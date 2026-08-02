@@ -14,8 +14,13 @@ class VideoOverlayWidget(QWidget):
         self.results = None
         self.image_size = None
         self.is_draw_cross = False
+        self.base = None  # ROIWidget, у которого берём трансформацию кадра
 
         GlobalBus.instance().is_draw_cross.connect(self._cross_logic)
+
+    def set_base(self, widget):
+        self.base = widget
+        widget.view_changed.connect(self.update)
 
     def _cross_logic(self, data):
         self.is_draw_cross = data
@@ -85,7 +90,7 @@ class VideoOverlayWidget(QWidget):
     #             painter.drawPolyline(pts)
 
     def paintEvent(self, event):
-        if not self.results or not self.image_size:
+        if not self.results or not self.image_size or self.base is None:
             return
         painter = QPainter(self)
 
@@ -95,14 +100,7 @@ class VideoOverlayWidget(QWidget):
         rect = self.rect()
         orig_w, orig_h = self.image_size
 
-        scale_x = rect.width() / orig_w
-        scale_y = rect.height() / orig_h
-        scale = min(scale_x, scale_y)
-
-        target_w = orig_w * scale
-        target_h = orig_h * scale
-        x_off = (rect.width() - target_w) / 2
-        y_off = (rect.height() - target_h) / 2
+        x_off, y_off, scale = self.base.get_transform()
 
         painter.translate(x_off, y_off)
         painter.scale(scale, scale)
@@ -111,13 +109,11 @@ class VideoOverlayWidget(QWidget):
 
         if self.is_draw_cross:
             # Получаем координаты и сразу добавляем 0.5 для выравнивания по центру пикселя
-            # cx = res.get("mu_x", 0.0) + 0.5
-            # cy = res.get("mu_y", 0.0) + 0.5
             cx = res.get("mu_x", 0.0)
             cy = res.get("mu_y", 0.0)
             # Включаем сглаживание, чтобы толщина 1.5 отрисовалась идеально мягко и точно
             painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-            painter.setPen(QPen(QColor(255, 0, 0, 200), 1.5, Qt.PenStyle.SolidLine))
+            painter.setPen(QPen(QColor(255, 0, 0, 200), 1.5 / scale, Qt.PenStyle.SolidLine))
 
             size = 2.0
             gap = 1.0
