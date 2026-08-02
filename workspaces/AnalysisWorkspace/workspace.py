@@ -73,6 +73,7 @@ class AnalysisWorkspace(AbstractWorkspace):
             self.latest_frame = None
             self._is_new_frame = False
             self.plotter.clear_canvas()
+            GlobalBus.instance().analysis_cleared.emit()
 
     def _buffer_frame(self, cam_name, frame):
         if not self.analysis_enabled:

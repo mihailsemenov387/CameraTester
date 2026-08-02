@@ -52,6 +52,7 @@ class CameraWorkspace(AbstractWorkspace):
         bus.analysis_many_results_sent.connect(self._on_results_received)
 
         bus.is_draw_fit.connect(self.toggle_draw)
+        bus.analysis_cleared.connect(self.overlay.clear)
 
     def toggle_draw(self, val):
         self.is_draw_fit = val

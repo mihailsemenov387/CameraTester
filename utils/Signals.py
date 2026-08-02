@@ -10,6 +10,8 @@ class GlobalBus(QObject):
     analysis_many_results_sent = Signal(str, dict)
     # max_intensity_found = Signal(dict)
 
+    analysis_cleared = Signal()
+
 
     is_draw_fit = Signal(bool)
     is_draw_cross = Signal(bool)
