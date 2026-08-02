@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 from harvesters.core import Harvester, TimeoutException
 
@@ -18,7 +17,14 @@ class HarvesterCamera(AbstractCamera):
         try:
             self.harvester.add_file(self.cti_path)
             self.harvester.update()
-            self.ia = self.harvester.create(0)
+
+            index = 0
+            if self.serial:
+                for i, dev in enumerate(self.harvester.device_info_list):
+                    if getattr(dev, "serial_number", None) == self.serial:
+                        index = i
+                        break
+            self.ia = self.harvester.create(index)
 
             nodemap = self.ia.remote_device.node_map
             if hasattr(nodemap, "ExposureTime"):
@@ -44,8 +50,12 @@ class HarvesterCamera(AbstractCamera):
                 component = payload.components[0]
                 width = component.width
                 height = component.height
+                n = getattr(component, "num_components", 1)
 
-                data = component.data.reshape(height, width).copy()
+                if n > 1:
+                    data = component.data.reshape(height, width, n).copy()
+                else:
+                    data = component.data.reshape(height, width).copy()
 
                 return data
         except TimeoutException:

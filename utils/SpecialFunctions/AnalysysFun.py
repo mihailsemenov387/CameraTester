@@ -4,13 +4,8 @@ from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
 
 WINDOW = 1000
-THRESH = 0.3
 WIN_MULT_FIT = 1
-PEAK_DIST = 100
-IS_AUTO_DIST = 1
-SENSITIVITY = 1
 IS_ADAPTIVE_WINDOW = 1
-PROMINENCE = 1
 
 # TODO: big refactor
 
@@ -48,7 +43,7 @@ def fit_gaussian(coords, w, window_size=WINDOW):
 
         popt, _ = curve_fit(gauss, c_wind, w_wind, p0=[A, mu, sigma, B], maxfev=2000)
         return (sigma, *popt)
-    except Exception as e:
+    except Exception:
         # Если фиттинг не сошелся
         return (0, 0, 0, 1, 0)
 
@@ -78,20 +73,19 @@ def fit_gaussian_many(coords, peak_idx, w, window_size):
             [0, mu - window_size, 0, 0],
             [A * 2, mu + window_size, window_size * 2, np.max(w_wind)],
         )
-        curve, pcov = curve_fit(
+        curve, _ = curve_fit(
             gauss, c_wind, w_wind, p0=[A, mu, sigma, B], bounds=bounds
         )
-        return (sigma, x, curve, pcov)
-    except:
+        return (sigma, x, curve)
+    except Exception:
         return None
 
 
 def calculate_V(signal):
-
     return (np.max(signal) - np.min(signal)) / (np.max(signal) + np.min(signal))
 
 
-def process_peaks(coords, pr, fname, peak_dist=40):  # peak_dist теперь в пикселях
+def process_peaks(coords, pr, peak_dist=40):  # peak_dist теперь в пикселях
     # 1. Поиск пиков (более мягкие условия)
     # Используем prominence (выступание над шумом) вместо жесткой высоты
     peaks, _ = find_peaks(
@@ -122,7 +116,7 @@ def process_peaks(coords, pr, fname, peak_dist=40):  # peak_dist теперь в
         if fit_res is None:
             continue
 
-        sigma, x_range, curve_params, cov = fit_res
+        sigma, x_range, curve_params = fit_res
         y_fit = gauss(x_range, *curve_params)
 
         # Накладываем этот "колокол" на общую линию для Плоттера
@@ -173,8 +167,8 @@ def process_many(img):
         return None
     img_norm, x, y, x_w, y_w = base
 
-    res_x = process_peaks(x, x_w, "x")
-    res_y = process_peaks(y, y_w, "y")
+    res_x = process_peaks(x, x_w)
+    res_y = process_peaks(y, y_w)
 
     # Собираем данные. Даже если пики не найдены, x_raw должен быть!
     data = {
@@ -203,9 +197,6 @@ def _get_base_profiles(img):
         gray = img
 
     norm = gray.astype(float)
-    # FIXME: if needed
-    # bg = np.mean(norm[0:15, 0:15])
-    # norm = np.clip(norm - bg, 0, None)
     return (
         norm,
         np.arange(norm.shape[1]),

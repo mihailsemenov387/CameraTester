@@ -37,17 +37,15 @@ class CameraWorkspace(AbstractWorkspace):
 
         self.is_draw_fit = False
 
-        # ------------ new settings init ---------
         self.dock_hw = QDockWidget("Настройки камеры", self)
         self.settings_ui = CameraSettingsWidget(camera_obj)
         self.dock_hw.setWidget(self.settings_ui)
         self.thread.camera_opened.connect(self.settings_ui.setup_ui)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock_hw)
         self.view_menu.addAction(self.dock_hw.toggleViewAction())
-        # ------------ new settings init ---------
 
         bus = GlobalBus.instance()
-        bus.raw_frame_sent.connect(self._on_frame_received) #TODO: сделать отправку части (сегмента кадра) {через выделение в виджете?  или  сделать через зум и drag}
+        bus.raw_frame_sent.connect(self._on_frame_received)
         bus.analysis_results_sent.connect(self._on_results_received)
         bus.analysis_many_results_sent.connect(self._on_results_received)
 

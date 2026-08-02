@@ -3,15 +3,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
-import cv2
 import numpy as np
 from PySide6.QtCore import QThread, Signal
-from PySide6.QtGui import QImage
 
 from utils.Signals import GlobalBus
 
-#TODO: make dataclass for camra methoods????
-# структура для настроек камеры
+
 @dataclass
 class CameraParameter:
     id: str
@@ -104,9 +101,11 @@ class CameraThread(QThread):
     def stop(self):
         self.running = False
 
-        if not self.wait(500):
-            self.terminate()
-            self.wait()
+        if not self.wait(2000):
+            # Крайний случай: захват кадра заблокирован в драйвере.
+            # terminate() опасен (может оставить драйвер в грязном состоянии),
+            # поэтому только предупреждаем, а не убиваем поток насильно.
+            print("[WARN] Поток камеры не остановился за 2с, оставляем как есть")
 
 
 

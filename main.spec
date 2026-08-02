@@ -25,7 +25,6 @@ a = Analysis(
         "utils",
         "utils.Classes.AbstractCamera",
         "utils.Classes.CameraRegistry",
-        "utils.Widgets.VideoDisplayWidget",
         "utils.Signals",
         # Ручной импорт камеры (хотя при "from .CameraWorkspace.workspace import..."
         # в MainWindow PyInstaller должен находить её сам, но оставим для страховки)

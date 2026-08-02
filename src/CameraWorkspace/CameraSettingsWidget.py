@@ -20,18 +20,29 @@ class CameraSettingsWidget(QWidget):
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(5, 5, 5, 5)
 
+        self._ui_built = False
+
         self.loading_label = QLabel("Ожидание подключения камеры...")
         self.loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.main_layout.addWidget(self.loading_label)
 
     def setup_ui(self):
-        self.main_layout.removeWidget(self.loading_label)
-        self.loading_label.deleteLater()
-        self.loading_label = None
+        if self._ui_built:
+            return
+        self._ui_built = True
 
-        self.parameters = self.camera.get_parameters()
+        if self.loading_label:
+            self.main_layout.removeWidget(self.loading_label)
+            self.loading_label.deleteLater()
+            self.loading_label = None
 
-        for param_id, param in self.parameters.items():
+        try:
+            self.parameters = self.camera.get_parameters()
+        except Exception as e:
+            print(f"[WARN] Не удалось получить параметры камеры: {e}")
+            self.parameters = {}
+
+        for param in self.parameters.values():
             self._build_parameter(param)
 
         self.main_layout.addStretch()

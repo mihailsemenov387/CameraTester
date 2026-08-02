@@ -4,8 +4,6 @@ from PySide6.QtCore import QPointF, Qt, Signal
 from PySide6.QtGui import QColor, QPen
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-# TODO: cosmetic refactor
-
 
 class Plotter(QWidget):
     intensity_calculated = Signal(float, float)
@@ -117,10 +115,6 @@ class Plotter(QWidget):
             ]
             self.series_y_raw.replace(points_y)
 
-            # if not self._is_draw:
-            #     self.clear_canvas()
-            #     return
-
             # 2. Рисуем фиттинг (Гаусс)
             has_fit_x = "total_fit_x" in data
             has_fit_y = "total_fit_y" in data
@@ -139,41 +133,32 @@ class Plotter(QWidget):
                 ]
                 self.series_y_fit.replace(fy_pts)
 
-            # 3. Рисуем линии максимума (по фиту, если он есть, иначе по сырым данным)
+            # 3. Считаем максимумы интенсивности и шлём в фокус-индикаторы
+            y_data_x = data["total_fit_x"] if has_fit_x else data["x_raw"]
+            y_data_y = data["total_fit_y"] if has_fit_y else data["y_raw"]
+            max_y_val_x = np.max(y_data_x)
+            max_y_val_y = np.max(y_data_y)
+            self._best_x = max(self._best_x, max_y_val_x)
+            self._best_y = max(self._best_y, max_y_val_y)
+            self.intensity_calculated.emit(float(max_y_val_x), float(max_y_val_y))
+
+            # 4. Линии уровня максимума (только если чекбокс включён)
             if self._is_draw_line:
-                # Берем максимальный Икс на оси для ограничения линии по ширине
                 axis_x_max_limit = float(data["x"][-1])
                 axis_y_max_limit = float(data["y"][-1])
 
-                # Ищем пик по X (высоту Гаусса X)
-                #TODO: рассчитывать локальный контраст в каждой точке (типа производная гауса?)
-                y_data_x = data["total_fit_x"] if has_fit_x else data["x_raw"]
-                max_y_val_x = np.max(y_data_x)  # Максимальная интенсивность по X
-                self._best_x = max(self._best_x, max_y_val_x)
-
-                # Горизонтальная линия от 0 до конца графика на уровне max_y_val_x
                 self.series_x_max_line.replace(
                     [QPointF(0, max_y_val_x), QPointF(axis_x_max_limit, max_y_val_x)]
                 )
                 self.series_x_max_line_best.replace(
                     [QPointF(0, self._best_x), QPointF(axis_x_max_limit, self._best_x)]
                 )
-
-                # Ищем пик по Y (высоту Гаусса Y)
-                y_data_y = data["total_fit_y"] if has_fit_y else data["y_raw"]
-                max_y_val_y = np.max(y_data_y)  # Максимальная интенсивность по Y
-                self._best_y = max(self._best_y, max_y_val_y)
-
-                # Горизонтальная линия от 0 до конца графика на уровне max_y_val_y
                 self.series_y_max_line.replace(
                     [QPointF(0, max_y_val_y), QPointF(axis_y_max_limit, max_y_val_y)]
                 )
                 self.series_y_max_line_best.replace(
                     [QPointF(0, self._best_y), QPointF(axis_y_max_limit, self._best_y)]
                 )
-                # Отправляем чистые интенсивности напрямую в сигнал
-                self.intensity_calculated.emit(float(max_y_val_x), float(max_y_val_y))
-
             else:
                 # Если чекбокс выключен, скрываем линии
                 self.series_x_max_line.clear()

@@ -1,13 +1,10 @@
 import importlib
 import pkgutil
-import sys
-from pathlib import Path
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QMessageBox
 
 import workspaces
-from utils.Classes.AbstractCamera import CameraThread
 from utils.Classes.CameraRegistry import create_camera
 from utils.Menus.TopBarMenu import CameraSelectionDialog
 from utils.Widgets.DetachableTabWidget import DetachableTabWidget
@@ -36,26 +33,6 @@ class Dashboard(QMainWindow):
         sys_menu.addAction("Выход", self.close)
 
         self.modules_menu = menu_bar.addMenu("Модули")
-
-    # def load_workspaces(self):
-    #     self.modules_menu.clear()
-
-    #     prefix = workspaces.__name__ + "."
-    #     for loader, module_name, is_pkg in pkgutil.walk_packages(
-    #         workspaces.__path__, prefix
-    #     ):
-    #         try:
-    #             importlib.import_module(module_name)
-    #         except Exception as e:
-    #             print(f"Ошибка загрузки модуля {module_name}: {e}")
-
-    #     for title, cls in WORKSPACE_REGISTRY.items():
-    #         action = QAction(title, self)
-
-    #         action.triggered.connect(
-    #             lambda chk=False, c=cls, t=title: self.add_workspace_tab(c, t)
-    #         )
-    #         self.modules_menu.addAction(action)
 
     def load_workspaces(self):
         self.modules_menu.clear()
@@ -106,7 +83,17 @@ class Dashboard(QMainWindow):
         ws.thread.camera_opened.connect(
             lambda: self.statusBar().showMessage(f"OK: {name}", 5000)
         )
+        ws.thread.camera_error.connect(
+            lambda msg, ws=ws, name=name: self._on_camera_error(ws, name, msg)
+        )
         ws.thread.start()
+
+    def _on_camera_error(self, ws, name, msg):
+        idx = self.tabs.indexOf(ws)
+        if idx >= 0:
+            self.tabs.removeTab(idx)
+            ws.deleteLater()
+        QMessageBox.warning(self, "Ошибка", f"Не удалось подключиться к {name}: {msg}")
 
     def closeEvent(self, event):
         print("Завершение работы программы...")

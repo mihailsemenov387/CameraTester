@@ -105,7 +105,7 @@ class HarvesterConfigPage(QWidget):
             self.camera_select.setDisabled(False)
             h.reset()  # Обязательно освобождаем драйвер!
 
-        except Exception as e:
+        except Exception:
             self.camera_select.addItem("Ошибка сканирования драйвера", None)
             self.camera_select.setDisabled(True)
 
