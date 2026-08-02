@@ -3,8 +3,10 @@ import numpy as np
 from harvesters.core import Harvester, TimeoutException
 
 from .AbstractCamera import AbstractCamera, CameraParameter
+from .CameraRegistry import register_camera
 
 
+@register_camera(typ="HARVESTER", title="Harvester camera")
 class HarvesterCamera(AbstractCamera):
     def __init__(self, cti_path: str, serial: str = None):
         self.cti_path = cti_path

@@ -7,7 +7,8 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QMessageBox
 
 import workspaces
-from utils.Classes.AbstractCamera import CameraFactory, CameraThread
+from utils.Classes.AbstractCamera import CameraThread
+from utils.Classes.CameraRegistry import create_camera
 from utils.Menus.TopBarMenu import CameraSelectionDialog
 from utils.Widgets.DetachableTabWidget import DetachableTabWidget
 from workspaces.AbstractWorkspace import WORKSPACE_REGISTRY
@@ -92,7 +93,7 @@ class Dashboard(QMainWindow):
 
     def add_camera(self, config):
         name = config.get("name") or "Cam name doesnt set in camera config!"
-        camera = CameraFactory.create(config)
+        camera = create_camera(config)
         if not camera:
             return
 

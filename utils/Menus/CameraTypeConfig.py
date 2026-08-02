@@ -6,24 +6,15 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QLineEdit,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-CAMERA_CONFIG_REGISTRY = {}
+from utils.Classes.CameraRegistry import register_camera_config
 
 
-def register_congig_page(title: str, typ: str):
-    def wrapper(cls):
-        CAMERA_CONFIG_REGISTRY[typ] = (title, cls)
-        return cls
-
-    return wrapper
-
-
-@register_congig_page(title="USB Camera(UVC)", typ="UVC")
+@register_camera_config(typ="UVC", title="USB Camera (UVC)")
 class UVCConfigPage(QWidget):
     def __init__(self):
         super().__init__()
@@ -44,7 +35,7 @@ class UVCConfigPage(QWidget):
 
 
 
-@register_congig_page(title="Fake Camera", typ="FAKECAM")
+@register_camera_config(typ="FAKECAM", title="Fake Camera")
 class FakeCamConfig(QWidget):
     def __init__(self):
         super().__init__()
@@ -55,23 +46,8 @@ class FakeCamConfig(QWidget):
         return {"name": "Fake camera"}
 
 
-@register_congig_page("RTSP Stream", "RTSP")
-class RTSPConfigPage(QWidget):
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.url_input = QLineEdit()
-        self.url_input.setPlaceholderText("rtsp://...")
-        layout.addWidget(self.url_input)
-        layout.addStretch()
-
-    def get_values(self):
-        return {"url": self.url_input.text(), "name": "IP Camera"}
-
-
 # FIXME: cleanup and refactor
-@register_congig_page("Harvester camera", "HARVESTER")
+@register_camera_config(typ="HARVESTER", title="Harvester camera")
 class HarvesterConfigPage(QWidget):
     def __init__(self):
         super().__init__()

@@ -1,10 +1,10 @@
-import sys
-
 import cv2
-
+import sys
 from .AbstractCamera import AbstractCamera, CameraParameter
+from .CameraRegistry import register_camera
 
 
+@register_camera(typ="UVC", title="USB Camera (UVC)")
 class UVCCamera(AbstractCamera):
     def __init__(self, index=0):
         self.index = index

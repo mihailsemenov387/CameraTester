@@ -8,7 +8,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from .CameraTypeConfig import CAMERA_CONFIG_REGISTRY
+from utils.Classes.CameraRegistry import CAMERA_REGISTRY
+
+# Импорт обязателен: здесь конфиг-страницы регистрируются в CAMERA_REGISTRY
+from . import CameraTypeConfig  # noqa: F401
 
 # TODO: add loader for camera type
 # class CameraSelectionDialog(QDialog):
@@ -72,8 +75,10 @@ class CameraSelectionDialog(QDialog):
         self.adjustSize()
 
     def load_camera_config_page(self):
-        for typ, (title, cls) in CAMERA_CONFIG_REGISTRY.items():
-            self._create_item(title, typ, cls)
+        for entry in CAMERA_REGISTRY.values():
+            if not entry.is_complete():
+                continue
+            self._create_item(entry.title, entry.typ, entry.config_cls)
 
     def _create_item(self, title, typ, cls):
 

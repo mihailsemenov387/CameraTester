@@ -1,4 +1,3 @@
-import sys
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -110,53 +109,4 @@ class CameraThread(QThread):
             self.wait()
 
 
-class CameraFactory:
-    @staticmethod
-    def _get_types():
-        from .HarvesterCamera import HarvesterCamera
-        from .UVCCamera import UVCCamera
-        from .FakeCamera import FakeAiryCamera
 
-        return {"UVC": UVCCamera, "HARVESTER": HarvesterCamera, "FAKECAM" : FakeAiryCamera}
-
-    # @staticmethod
-    # def create(config: dict) -> AbstractCamera:
-    #     cam_type = config.get("type")
-    #     camera_class = CameraFactory._types.get(cam_type)
-
-    #     if not camera_class:
-    #         return None
-
-    #     # У каждой камеры свои параметры.
-    #     # UVC нужен index, RTSP нужен будет url.
-    #     if cam_type == "UVC":
-    #         return camera_class(index=config.get("index"))
-
-    #     # Здесь можно будет добавить логику для других типов:
-    #     # elif cam_type == "RTSP":
-    #     #     return camera_class(url=config.get("url"))
-
-    #     return None
-
-    @staticmethod
-    def create(config: dict) -> AbstractCamera:
-        cam_type = config.get("type")
-        types = CameraFactory._get_types()
-        camera_class = types.get(cam_type)
-
-        if not camera_class:
-            return None
-
-        if cam_type == "UVC":
-            return camera_class(index=config.get("index"))
-
-
-        if cam_type == "FAKECAM":
-            return camera_class()
-
-        if cam_type == "HARVESTER":
-            return camera_class(
-                cti_path=config.get("cti_path"), serial=config.get("serial")
-            )
-
-        return None

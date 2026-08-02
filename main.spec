@@ -7,6 +7,9 @@ from PyInstaller.utils.hooks import collect_submodules
 # и скажет PyInstaller'у скомпилировать их в байт-код.
 # Теперь, если вы добавите новый воркспейс, .spec файл менять НЕ ПРИДЕТСЯ!
 dynamic_workspaces = collect_submodules("workspaces")
+# Аналогично подтягиваем весь utils (камеры регистрируются динамически
+# через CameraRegistry.discover_cameras, поэтому без этого exe не найдёт их).
+dynamic_utils = collect_submodules("utils")
 
 a = Analysis(
     ["src/main.py"],
@@ -21,6 +24,7 @@ a = Analysis(
         # Явные зависимости из utils (оставляем для надежности)
         "utils",
         "utils.Classes.AbstractCamera",
+        "utils.Classes.CameraRegistry",
         "utils.Widgets.VideoDisplayWidget",
         "utils.Signals",
         # Ручной импорт камеры (хотя при "from .CameraWorkspace.workspace import..."
@@ -28,7 +32,8 @@ a = Analysis(
         "src.CameraWorkspace.workspace",
         "src.CameraWorkspace.CameraSettingsWidget",
     ]
-    + dynamic_workspaces,  # <--- Динамически добавляем все воркспейсы в скрытые импорты
+    + dynamic_workspaces  # <--- Динамически добавляем все воркспейсы в скрытые импорты
+    + dynamic_utils,  # <--- и все модули utils (камеры)
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

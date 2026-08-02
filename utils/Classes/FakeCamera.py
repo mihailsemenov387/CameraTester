@@ -1,9 +1,12 @@
-import sys
 import numpy as np
 import cv2
 from scipy.special import j1
-from .AbstractCamera import AbstractCamera, CameraParameter
 
+from .AbstractCamera import AbstractCamera, CameraParameter
+from .CameraRegistry import register_camera
+
+
+@register_camera(typ="FAKECAM", title="Fake Camera")
 class FakeAiryCamera(AbstractCamera):
     def __init__(self, index=0):
         self.index = index
