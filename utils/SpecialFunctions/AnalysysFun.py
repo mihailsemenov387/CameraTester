@@ -204,3 +204,130 @@ def _get_base_profiles(img):
         np.mean(norm, axis=0),
         np.mean(norm, axis=1),
     )
+
+
+def process_contrast(img, fit_result=None):
+    """Контраст профиля как производная интенсивности по координате.
+
+    По умолчанию — центральная разность np.gradient сырого профиля
+    (длина совпадает с осью координат, график строится без сдвига).
+    Если передан результат фита (одиночный Гаусс или много гауссов),
+    производную считаем от гладкого фита — она не зашумлена и отражает
+    контраст именно анализируемых пиков.
+    """
+    base = _get_base_profiles(img)
+    if not base:
+        return None
+    _, x, y, x_w, y_w = base
+
+    dx = np.gradient(x_w)
+    dy = np.gradient(y_w)
+
+    if fit_result is not None:
+        t = fit_result.get("total_fit_x")
+        if t is not None and np.any(t):
+            dx = np.gradient(t)
+        t = fit_result.get("total_fit_y")
+        if t is not None and np.any(t):
+            dy = np.gradient(t)
+
+    return {
+        "x": x,
+        "y": y,
+        "x_raw": dx,
+        "y_raw": dy,
+    }
+
+
+def _local_michelson(profile, window, step):
+    """Локальный нормированный контраст (Майкельсон) вдоль профиля.
+
+    В окне `window` пикселей вокруг точки считается (max-min)/(max+min).
+    Точки ставятся каждые `step` пикселей — получается набор точек,
+    а не непрерывная кривая. Возвращает (позиции, значения)."""
+    n = len(profile)
+    half = max(1, window // 2)
+    positions = []
+    values = []
+    for i in range(0, n, step):
+        lo = max(0, i - half)
+        hi = min(n, i + half + 1)
+        w = profile[lo:hi]
+        if len(w) < 2:
+            continue
+        mn = float(w.min())
+        mx = float(w.max())
+        denom = mx + mn
+        values.append((mx - mn) / denom if denom > 0 else 0.0)
+        positions.append(float(i))
+    return np.asarray(positions), np.asarray(values)
+
+
+def estimate_contrast_params(x_profile, y_profile, min_window=3, max_window=15):
+    """Подбирает параметры (window, step) локального контраста по профилям.
+
+    Измеряет характерную ширину переходов яркости (краёв): модуль производной
+    профиля, порог — доля от её максимума (робастно к уровню шума), берётся
+    медианная ширина связных участков выше порога. Если выраженных краёв нет —
+    окно оценивается по длине профиля. Шаг — половина окна (не пропустить
+    пики). Окно ограничено [min, max]."""
+    def _edge_width(profile, frac=0.35):
+        g = np.abs(np.gradient(profile))
+        gmax = float(np.max(g))
+        if gmax <= 0:
+            return None  # плоский профиль
+        thresh = gmax * frac
+        idx = np.flatnonzero(g >= thresh)
+        if len(idx) == 0:
+            return None
+        splits = np.where(np.diff(idx) > 1)[0] + 1
+        groups = np.split(idx, splits)
+        return int(np.median([len(grp) for grp in groups]))
+
+    widths = [
+        w
+        for w in (_edge_width(x_profile), _edge_width(y_profile))
+        if w is not None
+    ]
+    if widths:
+        window = int(np.median(widths))
+    else:
+        # Нет выраженных краёв — подбираем по длине профиля
+        window = len(x_profile) // 100
+    window = int(np.clip(window, min_window, max_window))
+    step = max(1, window // 2)
+    return window, step
+
+
+def process_contrast_normalized(img, fit_result=None, window=3, step=200):
+    """Нормированный локальный контраст профилей по X и по Y.
+
+    Значения Майкельсона в [0..1]. Если есть фит (fit_result), считаем по
+    гладкому фиту (без шума), иначе — по сырому профилю.
+    """
+    base = _get_base_profiles(img)
+    if not base:
+        return None
+    _, x, y, x_w, y_w = base
+
+    px = x_w
+    py = y_w
+    if fit_result is not None:
+        t = fit_result.get("total_fit_x")
+        if t is not None and np.any(t):
+            px = t
+        t = fit_result.get("total_fit_y")
+        if t is not None and np.any(t):
+            py = t
+
+    x_pos, x_val = _local_michelson(px, window, step)
+    y_pos, y_val = _local_michelson(py, window, step)
+
+    return {
+        "x": x,
+        "y": y,
+        "x_contrast_pts": x_pos,
+        "x_contrast_vals": x_val,
+        "y_contrast_pts": y_pos,
+        "y_contrast_vals": y_val,
+    }

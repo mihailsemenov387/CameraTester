@@ -2,6 +2,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QHBoxLayout,
     QLabel,
     QPushButton,
     QSpinBox,
@@ -16,6 +17,11 @@ class AnalysisSettingsWidget(QWidget):
     speed_changed = Signal(int)
     mode_changed = Signal(int)
     analysis_enabled = Signal(bool)
+    contrast_enabled = Signal(bool)
+    norm_contrast_enabled = Signal(bool)
+    norm_contrast_window = Signal(int)
+    norm_contrast_step = Signal(int)
+    auto_params_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -70,6 +76,44 @@ class AnalysisSettingsWidget(QWidget):
         self.analysis_cb.toggled.connect(self.analysis_enabled.emit)
         layout.addWidget(self.analysis_cb)
         layout.addWidget(self.mode_combo)
+
+        self.contrast_cb = QCheckBox("Контраст (производная)")
+        self.contrast_cb.setChecked(False)
+        self.contrast_cb.toggled.connect(self.contrast_enabled.emit)
+        layout.addWidget(self.contrast_cb)
+
+        self.norm_cb = QCheckBox("Норм. контраст (Майкельсон)")
+        self.norm_cb.setChecked(False)
+        self.norm_cb.toggled.connect(self.norm_contrast_enabled.emit)
+        self.norm_cb.toggled.connect(self._on_norm_toggled)
+        layout.addWidget(self.norm_cb)
+
+        self.norm_window_spin = QSpinBox()
+        self.norm_window_spin.setRange(1, 200)
+        self.norm_window_spin.setValue(3)
+        self.norm_window_spin.setSuffix(" px")
+        self.norm_window_spin.valueChanged.connect(self.norm_contrast_window.emit)
+
+        self.norm_step_spin = QSpinBox()
+        self.norm_step_spin.setRange(1, 100000)
+        self.norm_step_spin.setValue(200)
+        self.norm_step_spin.setSuffix(" px")
+        self.norm_step_spin.valueChanged.connect(self.norm_contrast_step.emit)
+
+        self.auto_params_btn = QPushButton("Авто")
+        self.auto_params_btn.setToolTip(
+            "Подобрать окно и шаг автоматически по текущему кадру"
+        )
+        self.auto_params_btn.clicked.connect(self.auto_params_requested.emit)
+
+        norm_row = QHBoxLayout()
+        norm_row.addWidget(QLabel("Окно:"))
+        norm_row.addWidget(self.norm_window_spin)
+        norm_row.addWidget(QLabel("Шаг:"))
+        norm_row.addWidget(self.norm_step_spin)
+        norm_row.addWidget(self.auto_params_btn)
+        layout.addLayout(norm_row)
+        self._on_norm_toggled(False)
         layout.addWidget(self.is_draw_fit)
         layout.addWidget(self.is_draw_lines_on_plot)
         layout.addWidget(QLabel("<b>Скорость обновления расчетов</b>"))
@@ -77,6 +121,15 @@ class AnalysisSettingsWidget(QWidget):
         layout.addStretch()
 
         self._on_mode_changed()
+
+    def _on_norm_toggled(self, enabled):
+        self.norm_window_spin.setEnabled(enabled)
+        self.norm_step_spin.setEnabled(enabled)
+
+    def set_norm_params(self, window, step):
+        """Устанавливает окно/шаг (значения уже подобраны автоматически)."""
+        self.norm_window_spin.setValue(window)
+        self.norm_step_spin.setValue(step)
 
     def _on_mode_changed(self):
         current_mode = self.mode_combo.currentData()

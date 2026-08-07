@@ -1,0 +1,145 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Blocks">
+      <UniqueIdentifier>{b1c08485-996a-4500-beee-d08337e9a768}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-FlyCapture">
+      <UniqueIdentifier>{9c909673-8492-44d1-94c0-657e2a9c98e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-FlyCapture\src">
+      <UniqueIdentifier>{20d08429-e940-4d3c-8c87-ffddefb3492c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-FlyCapture\FlyCapture2">
+      <UniqueIdentifier>{e7267cb6-dc7f-4c92-b5bf-9a7d1953a931}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-FlyCapture\FlyCapture2\include">
+      <UniqueIdentifier>{6729ada2-ae46-429a-8b2f-b73af066d21d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-FlyCapture\FlyCapture2\include\C">
+      <UniqueIdentifier>{199056eb-c8b6-48a1-b49c-2bcf7a93baab}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\SimpleFlyCaptureApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\SimpleFlyCaptureApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="..\include\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\..\src\FlyCaptureCamera.cpp">
+      <Filter>Blocks\Cinder-FlyCapture\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\BusManager.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\Camera.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\CameraBase.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\Error.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\FlyCapture2.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\FlyCapture2Defs.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\FlyCapture2GUI.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\FlyCapture2Platform.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\FlyCapture2Video.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\FlyCapture2VideoDefs.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\GigECamera.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\Image.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\ImageStatistics.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\MultiSyncLibrary.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\MultiSyncLibraryDefs.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\MultiSyncLibraryPlatform.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\PGRDirectShow.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\TopologyNode.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\Utilities.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\FlyCapture2_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\FlyCapture2Defs_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\FlyCapture2GUI_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\FlyCapture2Platform_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\FlyCapture2Video_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\FlyCapture2VideoDefs_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\MultiSyncLibrary_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\MultiSyncLibraryDefs_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\libs\FlyCapture2\include\C\MultiSyncLibraryPlatform_C.h">
+      <Filter>Blocks\Cinder-FlyCapture\FlyCapture2\include\C</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\src\FlyCaptureCamera.h">
+      <Filter>Blocks\Cinder-FlyCapture\src</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>

@@ -3,7 +3,14 @@ from PySide6.QtWidgets import QDockWidget, QMainWindow
 
 from utils.Classes.Plotter import Plotter
 from utils.Signals import GlobalBus
-from utils.SpecialFunctions.AnalysysFun import _get_base_profiles, process, process_many
+from utils.SpecialFunctions.AnalysysFun import (
+    _get_base_profiles,
+    estimate_contrast_params,
+    process,
+    process_contrast,
+    process_contrast_normalized,
+    process_many,
+)
 from workspaces.AbstractWorkspace import AbstractWorkspace, register_workspace
 
 from .AnalysisSettingsWidget import AnalysisSettingsWidget
@@ -18,6 +25,10 @@ class AnalysisWorkspace(AbstractWorkspace):
 
         self.current_mode = 0
         self.analysis_enabled = True
+        self.contrast_enabled = False
+        self.norm_contrast_enabled = False
+        self.norm_window = 3
+        self.norm_step = 200
         self.latest_frame = None
         self.latest_cam_name = None
         self._is_new_frame = False
@@ -36,6 +47,11 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.analysis_timer.start(self.settings_ui.speed_spin.value())
         self.settings_ui.mode_changed.connect(self._update_mode)
         self.settings_ui.analysis_enabled.connect(self._on_analysis_enabled)
+        self.settings_ui.contrast_enabled.connect(self._on_contrast_enabled)
+        self.settings_ui.norm_contrast_enabled.connect(self._on_norm_contrast_enabled)
+        self.settings_ui.norm_contrast_window.connect(self._set_norm_window)
+        self.settings_ui.norm_contrast_step.connect(self._set_norm_step)
+        self.settings_ui.auto_params_requested.connect(self._auto_contrast_params)
 
         # ceckbox for inner plotter logic
         # self.settings_ui.is_draw_lines_on_plot.toggled.connect(self.plotter.update_line_vis)
@@ -75,6 +91,33 @@ class AnalysisWorkspace(AbstractWorkspace):
             self.plotter.clear_canvas()
             GlobalBus.instance().analysis_cleared.emit()
 
+    def _on_contrast_enabled(self, enabled):
+        self.contrast_enabled = enabled
+        self.plotter.set_contrast_mode(enabled)
+
+    def _on_norm_contrast_enabled(self, enabled):
+        self.norm_contrast_enabled = enabled
+
+    def _set_norm_window(self, value):
+        self.norm_window = value
+
+    def _set_norm_step(self, value):
+        self.norm_step = value
+
+    def _auto_contrast_params(self):
+        """Кнопка «Авто»: подбирает окно/шаг норм. контраста по текущему кадру."""
+        if self.latest_frame is None:
+            return
+        base = _get_base_profiles(self.latest_frame)
+        if not base:
+            return
+        _, _, _, x_w, y_w = base
+        window, step = estimate_contrast_params(x_w, y_w)
+        self.norm_window = window
+        self.norm_step = step
+        self.settings_ui.set_norm_params(window, step)
+        print(f"[DEBUG] авто параметры контраста: окно={window}, шаг={step}")
+
     def _buffer_frame(self, cam_name, frame):
         if not self.analysis_enabled:
             return
@@ -93,6 +136,45 @@ class AnalysisWorkspace(AbstractWorkspace):
 
         mode = self.current_mode
         res = None
+
+        # Контраст (производная) и/или нормированный контраст — отдельные
+        # кнопки. На графике рисуем производную/точки норм. контраста, а сам
+        # фит всё равно отправляем в оверлей («фит на главном выходе» работает
+        # и в режимах контраста).
+        if self.contrast_enabled or self.norm_contrast_enabled:
+            fit_res = None
+            if mode == 1:
+                fit_res = process(self.latest_frame)
+                if fit_res:
+                    GlobalBus.instance().analysis_results_sent.emit(
+                        self.latest_cam_name, fit_res
+                    )
+            elif mode == 2:
+                fit_res = process_many(self.latest_frame)
+                if fit_res:
+                    GlobalBus.instance().analysis_many_results_sent.emit(
+                        self.latest_cam_name, fit_res
+                    )
+
+            data = {}
+            if self.contrast_enabled:
+                c = process_contrast(self.latest_frame, fit_result=fit_res)
+                if c:
+                    data.update(c)
+            if self.norm_contrast_enabled:
+                n = process_contrast_normalized(
+                    self.latest_frame,
+                    fit_result=fit_res,
+                    window=self.norm_window,
+                    step=self.norm_step,
+                )
+                if n:
+                    data.update(n)
+
+            if data:
+                self._is_new_frame = False
+                self.plotter.update_data(data)
+            return
 
         if mode == 0:
             _, x, y, x_w, y_w = _get_base_profiles(self.latest_frame)

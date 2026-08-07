@@ -1,16 +1,17 @@
-from harvesters.core import Harvester
 from PySide6.QtCore import QTimer
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QFormLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
+from utils.Classes import FlyCapture2Native as fc2n
 from utils.Classes.CameraRegistry import register_camera_config
 
 
@@ -87,6 +88,8 @@ class HarvesterConfigPage(QWidget):
         """Временный запуск Harvester для поиска всех доступных камер"""
         self.camera_select.clear()
         try:
+            from harvesters.core import Harvester
+
             h = Harvester()
             h.add_file(cti_path)
             h.update()
@@ -119,4 +122,62 @@ class HarvesterConfigPage(QWidget):
             else "Harvester Cam",
             "cti_path": self.cti_input.text(),
             "serial": selected_serial,  # Передаем строгий серийник в фабрику
+        }
+
+
+@register_camera_config(typ="POINTGREY", title="Point Grey / FlyCapture2")
+class PointGreyConfigPage(QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        self.status_label = QLabel()
+        self.status_label.setWordWrap(True)
+        layout.addWidget(self.status_label)
+
+        self.camera_select = QComboBox()
+        layout.addWidget(self.camera_select)
+
+        self.refresh_btn = QPushButton("Сканировать")
+        self.refresh_btn.clicked.connect(self.refresh)
+        layout.addWidget(self.refresh_btn)
+
+        layout.addStretch()
+        QTimer.singleShot(100, self.refresh)
+
+    def refresh(self):
+        self.camera_select.clear()
+        try:
+            cams = fc2n.list_cameras()
+        except Exception as e:
+            cams = None
+            print(f"[POINTGREY] Ошибка сканирования: {e}")
+
+        if cams is None:
+            self.status_label.setText(
+                f"SDK FlyCapture2 не найден.\n{fc2n.sdk_missing_reason}\n"
+                "Установите FlyCapture2 SDK или положите FlyCapture2C.dll "
+                "в папку External."
+            )
+            self.status_label.setStyleSheet("color: red;")
+            self.camera_select.setDisabled(True)
+            return
+
+        self.status_label.setText("")
+        if not cams:
+            self.status_label.setText("Камеры не найдены.")
+            self.camera_select.setDisabled(True)
+            return
+
+        self.camera_select.setDisabled(False)
+        for model, serial in cams:
+            self.camera_select.addItem(f"{model} ({serial})", serial)
+
+    def get_values(self) -> dict:
+        serial = self.camera_select.currentData()
+        return {
+            "serial": serial,
+            "name": self.camera_select.currentText() if serial else "Point Grey Cam",
         }
