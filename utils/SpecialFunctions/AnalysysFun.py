@@ -134,9 +134,10 @@ def process_peaks(coords, pr, peak_dist=40):  # peak_dist теперь в пик
     }
 
 
-def process(img):
+def process(img, base=None):
     """Анализ одного пика"""
-    base = _get_base_profiles(img)
+    if base is None:
+        base = _get_base_profiles(img)
     if not base:
         return None
     img_norm, x, y, x_w, y_w = base
@@ -160,9 +161,10 @@ def process(img):
     }
 
 
-def process_many(img):
+def process_many(img, base=None):
     """Анализ множества пиков"""
-    base = _get_base_profiles(img)
+    if base is None:
+        base = _get_base_profiles(img)
     if not base:
         return None
     img_norm, x, y, x_w, y_w = base
@@ -206,16 +208,19 @@ def _get_base_profiles(img):
     )
 
 
-def process_contrast(img, fit_result=None):
+def process_contrast(img, fit_result=None, base=None):
     """Контраст профиля как производная интенсивности по координате.
 
-    По умолчанию — центральная разность np.gradient сырого профиля
-    (длина совпадает с осью координат, график строится без сдвига).
     Если передан результат фита (одиночный Гаусс или много гауссов),
-    производную считаем от гладкого фита — она не зашумлена и отражает
-    контраст именно анализируемых пиков.
+    производную считаем от гладкого фита (она не зашумлена и отражает
+    контраст именно анализируемых пиков), иначе — от сырого профиля.
+
+    Производная укладывается в отдельные ключи `x_deriv`/`y_deriv`,
+    а сам профиль остаётся в `x_raw`/`y_raw` — поэтому Plotter не заменяет
+    профиль производной и не сжимает главную ось под её маленький размах.
     """
-    base = _get_base_profiles(img)
+    if base is None:
+        base = _get_base_profiles(img)
     if not base:
         return None
     _, x, y, x_w, y_w = base
@@ -234,8 +239,10 @@ def process_contrast(img, fit_result=None):
     return {
         "x": x,
         "y": y,
-        "x_raw": dx,
-        "y_raw": dy,
+        "x_raw": x_w,
+        "y_raw": y_w,
+        "x_deriv": dx,
+        "y_deriv": dy,
     }
 
 
@@ -299,13 +306,14 @@ def estimate_contrast_params(x_profile, y_profile, min_window=3, max_window=15):
     return window, step
 
 
-def process_contrast_normalized(img, fit_result=None, window=3, step=200):
+def process_contrast_normalized(img, fit_result=None, window=3, step=200, base=None):
     """Нормированный локальный контраст профилей по X и по Y.
 
     Значения Майкельсона в [0..1]. Если есть фит (fit_result), считаем по
     гладкому фиту (без шума), иначе — по сырому профилю.
     """
-    base = _get_base_profiles(img)
+    if base is None:
+        base = _get_base_profiles(img)
     if not base:
         return None
     _, x, y, x_w, y_w = base

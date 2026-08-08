@@ -73,6 +73,17 @@ class Plotter(QWidget):
         )
         self.series_x_contrast.attachAxis(self.axis_x_contrast)
 
+        # Производная профиля (контраст) — оверлей поверх профиля,
+        # рисуется на главных осях, нормализованная под размах профиля.
+        self.series_x_deriv = QLineSeries()
+        self.series_x_deriv.setName("Производная X")
+        self.series_x_deriv.setPen(QPen(QColor(Qt.GlobalColor.darkYellow), 1))
+        self.chart_x.addSeries(self.series_x_deriv)
+        self.series_x_deriv.attachAxis(
+            self.chart_x.axes(Qt.Orientation.Horizontal)[0]
+        )
+        self.series_x_deriv.attachAxis(self.chart_x.axes(Qt.Orientation.Vertical)[0])
+
         # --- НАСТРОЙКА ГРАФИКА Y ---
         self.series_y_raw = QLineSeries()
         self.series_y_raw.setName("Сырые данные Y")
@@ -119,6 +130,16 @@ class Plotter(QWidget):
         )
         self.series_y_contrast.attachAxis(self.axis_y_contrast)
 
+        # Производная профиля по Y (аналог серии по X).
+        self.series_y_deriv = QLineSeries()
+        self.series_y_deriv.setName("Производная Y")
+        self.series_y_deriv.setPen(QPen(QColor(Qt.GlobalColor.darkYellow), 1))
+        self.chart_y.addSeries(self.series_y_deriv)
+        self.series_y_deriv.attachAxis(
+            self.chart_y.axes(Qt.Orientation.Horizontal)[0]
+        )
+        self.series_y_deriv.attachAxis(self.chart_y.axes(Qt.Orientation.Vertical)[0])
+
         layout.addWidget(QChartView(self.chart_x))
         layout.addWidget(QChartView(self.chart_y))
 
@@ -142,11 +163,13 @@ class Plotter(QWidget):
         self.series_x_max_line.clear()
         self.series_x_max_line_best.clear()
         self.series_x_contrast.clear()
+        self.series_x_deriv.clear()
         self.series_y_raw.clear()
         self.series_y_fit.clear()
         self.series_y_max_line.clear()
         self.series_y_max_line_best.clear()
         self.series_y_contrast.clear()
+        self.series_y_deriv.clear()
         self._best_x = self._best_y = 0
 
     def reset_best(self):
@@ -157,9 +180,9 @@ class Plotter(QWidget):
             return
 
         try:
-            # Нормированный контраст (Майкельсон) — точки со своей осью 0..1.
-            # Рисуем независимо от профиля/контраста.
-            if "x_contrast_pts" in data and "y_contrast_pts" in data:
+            # --- Нормированный контраст (Майкельсон) — точки + правая ось 0..1 ---
+            has_norm = "x_contrast_pts" in data and "y_contrast_pts" in data
+            if has_norm:
                 self.series_x_contrast.replace(
                     [
                         QPointF(float(px), float(pv))
@@ -179,118 +202,170 @@ class Plotter(QWidget):
                 self.axis_x_contrast.setVisible(True)
                 self.axis_y_contrast.setVisible(True)
             else:
+                # Выключили норм. контраст — прячем точки и ось
                 self.series_x_contrast.clear()
                 self.series_y_contrast.clear()
                 self.axis_x_contrast.setVisible(False)
                 self.axis_y_contrast.setVisible(False)
 
-            if "x_raw" not in data or "y_raw" not in data:
+            # Координаты нужны для любых построений (профиль/фит/точки).
+            has_coords = (
+                "x" in data and "y" in data and len(data["x"]) > 0 and len(data["y"]) > 0
+            )
+            if not has_coords:
                 return
+            x_max = float(data["x"][-1])
+            y_max = float(data["y"][-1])
 
-            # 1. Рисуем сырые данные
-            points_x = [
-                QPointF(float(x), float(y)) for x, y in zip(data["x"], data["x_raw"])
-            ]
-            self.series_x_raw.replace(points_x)
+# 1. Профиль (сырые данные либо производная, если выбран контраст).
+            #    Presence-driven: нет профиля в данных — старый профиль не оставляем.
+            has_raw = "x_raw" in data and "y_raw" in data
+            if has_raw:
+                self.series_x_raw.replace(
+                    [
+                        QPointF(float(a), float(b))
+                        for a, b in zip(data["x"], data["x_raw"])
+                    ]
+                )
+                self.series_y_raw.replace(
+                    [
+                        QPointF(float(a), float(b))
+                        for a, b in zip(data["y"], data["y_raw"])
+                    ]
+                )
+            else:
+                self.series_x_raw.clear()
+                self.series_y_raw.clear()
 
-            points_y = [
-                QPointF(float(x), float(y)) for x, y in zip(data["y"], data["y_raw"])
-            ]
-            self.series_y_raw.replace(points_y)
-
-            # 2. Рисуем фиттинг (Гаусс). В режиме контраста фит не рисуем:
-            #    его амплитуда (200-250) задирает ось, и производная (~10)
-            #    визуально уходит в ноль.
+            # 2. Фит (Гаусс). Нет фита в новых данных — не оставляем устаревший.
             has_fit_x = "total_fit_x" in data
             has_fit_y = "total_fit_y" in data
-
-            if self._is_contrast:
-                self.series_x_fit.clear()
-                self.series_y_fit.clear()
-            else:
-                if has_fit_x:
-                    fx_pts = [
+            if has_fit_x:
+                self.series_x_fit.replace(
+                    [
                         QPointF(float(xi), float(yi))
                         for xi, yi in enumerate(data["total_fit_x"])
                     ]
-                    self.series_x_fit.replace(fx_pts)
-
-                if has_fit_y:
-                    fy_pts = [
+                )
+            else:
+                self.series_x_fit.clear()
+            if has_fit_y:
+                self.series_y_fit.replace(
+                    [
                         QPointF(float(xi), float(yi))
                         for xi, yi in enumerate(data["total_fit_y"])
                     ]
-                    self.series_y_fit.replace(fy_pts)
-
-            # 3. Считаем максимумы интенсивности и шлём в фокус-индикаторы
-            if self._is_contrast:
-                # Рекорды интенсивности в режиме контраста не накапливаем
-                max_y_val_x = float(np.max(data["x_raw"]))
-                max_y_val_y = float(np.max(data["y_raw"]))
+                )
             else:
-                y_data_x = data["total_fit_x"] if has_fit_x else data["x_raw"]
-                y_data_y = data["total_fit_y"] if has_fit_y else data["y_raw"]
-                max_y_val_x = np.max(y_data_x)
-                max_y_val_y = np.max(y_data_y)
-                self._best_x = max(self._best_x, max_y_val_x)
-                self._best_y = max(self._best_y, max_y_val_y)
-                self.intensity_calculated.emit(float(max_y_val_x), float(max_y_val_y))
+                self.series_y_fit.clear()
 
-            # 4. Линии уровня максимума (только если чекбокс включён)
-            if self._is_draw_line:
-                axis_x_max_limit = float(data["x"][-1])
-                axis_y_max_limit = float(data["y"][-1])
+            # 5. Границы главных осей — ТОЛЬКО по профилю и фиту.
+            #    Контрастные серии (производная, норм. Майкельсон) рисуются
+            #    поверх и на границы оси НЕ влияют.
+            lo_x, hi_x = self._main_bounds(data, "x_raw", "total_fit_x")
+            lo_y, hi_y = self._main_bounds(data, "y_raw", "total_fit_y")
 
+            # 2b. Производная — нормируем под размах главной оси, чтобы она
+            #     была видна поверх профиля, не меняя её границы.
+            self._draw_overlay_norm(
+                data, "x_deriv", data["x"], self.series_x_deriv, lo_x, hi_x
+            )
+            self._draw_overlay_norm(
+                data, "y_deriv", data["y"], self.series_y_deriv, lo_y, hi_y
+            )
+
+            # 3. Максимум высоты для линий уровня и фокус-индикаторов.
+            #    Рекорды («best») накапливаем только в режиме фита.
+            has_display = has_raw
+            if has_fit_x:
+                max_x = float(np.max(data["total_fit_x"]))
+                self._best_x = max(self._best_x, max_x)
+            elif has_raw:
+                max_x = float(np.max(data["x_raw"]))
+            else:
+                max_x = 0.0
+            if has_fit_y:
+                max_y = float(np.max(data["total_fit_y"]))
+                self._best_y = max(self._best_y, max_y)
+            elif has_raw:
+                max_y = float(np.max(data["y_raw"]))
+            else:
+                max_y = 0.0
+
+            # 4. Линии уровня максимума (только если чекбокс включён).
+            if self._is_draw_line and has_display:
                 self.series_x_max_line.replace(
-                    [QPointF(0, max_y_val_x), QPointF(axis_x_max_limit, max_y_val_x)]
+                    [QPointF(0, max_x), QPointF(x_max, max_x)]
                 )
                 self.series_y_max_line.replace(
-                    [QPointF(0, max_y_val_y), QPointF(axis_y_max_limit, max_y_val_y)]
+                    [QPointF(0, max_y), QPointF(y_max, max_y)]
                 )
-
-                if self._is_contrast:
-                    # «Рекордный» максимум в режиме контраста не показываем
-                    self.series_x_max_line_best.clear()
-                    self.series_y_max_line_best.clear()
-                else:
+                if has_fit_x:
                     self.series_x_max_line_best.replace(
-                        [QPointF(0, self._best_x), QPointF(axis_x_max_limit, self._best_x)]
+                        [QPointF(0, self._best_x), QPointF(x_max, self._best_x)]
                     )
+                else:
+                    self.series_x_max_line_best.clear()
+                if has_fit_y:
                     self.series_y_max_line_best.replace(
-                        [QPointF(0, self._best_y), QPointF(axis_y_max_limit, self._best_y)]
+                        [QPointF(0, self._best_y), QPointF(y_max, self._best_y)]
                     )
+                else:
+                    self.series_y_max_line_best.clear()
             else:
-                # Если чекбокс выключен, скрываем линии
                 self.series_x_max_line.clear()
                 self.series_x_max_line_best.clear()
                 self.series_y_max_line.clear()
                 self.series_y_max_line_best.clear()
 
-            # 5. Обновляем границы осей под новые данные
-            if self._is_contrast:
-                # Динамические лимиты строго по текущему максимуму контраста
-                lo_x = float(np.min(data["x_raw"])) * 1.1 - 1
-                hi_x = float(np.max(data["x_raw"])) * 1.1 + 1
-                lo_y = float(np.min(data["y_raw"])) * 1.1 - 1
-                hi_y = float(np.max(data["y_raw"])) * 1.1 + 1
-            else:
-                max_val_x = float(np.max(data["x_raw"]))
-                max_val = max(self._best_x, max_val_x)
-                lo_x, hi_x = 0, max_val * 1.1 + 1
+            # Фокус-индикаторы: текущая высота пика (по фиту, если он есть).
+            if has_display:
+                self.intensity_calculated.emit(float(max_x), float(max_y))
 
-                max_val_y = float(np.max(data["y_raw"]))
-                max_val = max(self._best_y, max_val_y)
-                lo_y, hi_y = 0, max_val * 1.1 + 1
-
-            self.chart_x.axes(Qt.Orientation.Horizontal)[0].setRange(
-                0, float(data["x"][-1])
-            )
+            self.chart_x.axes(Qt.Orientation.Horizontal)[0].setRange(0, x_max)
             self.chart_x.axes(Qt.Orientation.Vertical)[0].setRange(lo_x, hi_x)
 
-            self.chart_y.axes(Qt.Orientation.Horizontal)[0].setRange(
-                0, float(data["y"][-1])
-            )
+            self.chart_y.axes(Qt.Orientation.Horizontal)[0].setRange(0, y_max)
             self.chart_y.axes(Qt.Orientation.Vertical)[0].setRange(lo_y, hi_y)
 
         except Exception as e:
             print(f"Plotter Render Error: {e}")
+
+    @staticmethod
+    def _main_bounds(data, raw_key, fit_key):
+        """Вертикальные границы главной оси: строго по профилю (+ фит).
+        Никакие контрастные данные сюда не попадают."""
+        parts = []
+        if raw_key in data and len(data[raw_key]):
+            parts.append(data[raw_key])
+        if fit_key in data and len(data[fit_key]):
+            parts.append(data[fit_key])
+        if not parts:
+            return 0.0, 1.0
+        vmin = float(min(np.min(p) for p in parts))
+        vmax = float(max(np.max(p) for p in parts))
+        if vmax <= vmin:
+            return vmin, vmin + 1.0
+        pad = (vmax - vmin) * 0.08
+        return vmin - pad, vmax + pad
+
+    def _draw_overlay_norm(self, data, key, coords, series, lo, hi):
+        """Рисует оверлейную серию (например, производную), нормализуя её
+        значения к диапазону [lo, hi] главной оси — чтобы она была видна,
+        не ломая границы оси. Если данных нет — очищает серию."""
+        if key not in data:
+            series.clear()
+            return
+        v = data[key]
+        vmin = float(np.min(v))
+        vmax = float(np.max(v))
+        if vmax > vmin:
+            scale = (hi - lo) / (vmax - vmin)
+            pts = [
+                QPointF(float(c), float(lo + (val - vmin) * scale))
+                for c, val in zip(coords, v)
+            ]
+        else:
+            mid = (lo + hi) / 2.0
+            pts = [QPointF(float(c), mid) for c in coords]
+        series.replace(pts)

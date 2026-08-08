@@ -32,60 +32,52 @@ class AnalysisSettingsWidget(QWidget):
         self._best_x = 0.0
         self._best_y = 0.0
 
+        # === БЛОК ОБРАБОТКИ ===
+        layout.addWidget(QLabel("<b>Обработка:</b>"))
+
+        self.analysis_cb = QCheckBox("Анализ")
+        self.analysis_cb.setChecked(True)
+        self.analysis_cb.toggled.connect(self.analysis_enabled.emit)
+        layout.addWidget(self.analysis_cb)
+
         self.mode_combo = QComboBox()
-        self.mode_combo.addItem("Выключено", 0)
+        self.mode_combo.addItem("Только профили", 0)
         self.mode_combo.addItem("Одиночный Гаусс", 1)
-        self.mode_combo.addItem("Много гауссов)", 2)
+        self.mode_combo.addItem("Много гауссов", 2)
         self.mode_combo.currentIndexChanged.connect(self._on_mode_changed)
+        layout.addWidget(self.mode_combo)
 
         self.is_draw_fit = QCheckBox("Отобразить фит на главном выходе")
         self.is_draw_fit.toggled.connect(GlobalBus.instance().is_draw_fit.emit)
+        layout.addWidget(self.is_draw_fit)
 
         self.is_draw_lines_on_plot = QCheckBox("Отобразить линии на графике")
-
-        # --- БЛОК ФОКУСИРОВКИ ---
-        layout.addWidget(QLabel("<b>Интенсивность:</b>"))
-
-        # Метки для текущих значений
-        self.current_focus_label = QLabel("I X: | Y: ")
-        layout.addWidget(self.current_focus_label)
-
-        # Метки для рекордов (лучшего фокуса)
-        self.best_focus_label = QLabel("max I  X:  | Y: ")
-        self.best_focus_label.setStyleSheet("color: green; font-weight: bold;")
-        layout.addWidget(self.best_focus_label)
-
-        # Кнопка сброса рекордов (чтобы начать настройку заново)
-        self.reset_focus_btn = QPushButton("Сбросить максимум")
-        self.reset_focus_btn.clicked.connect(self._reset_focus_records)
-        layout.addWidget(self.reset_focus_btn)
-
-        # Подключаем сигнал из шины
-        # GlobalBus.instance().max_intensity_found.connect(self._update_focus_indicators)
-        # ------------------------
+        layout.addWidget(self.is_draw_lines_on_plot)
 
         self.speed_spin = QSpinBox()
         self.speed_spin.setRange(50, 2000)
         self.speed_spin.setSuffix(" ms")
         self.speed_spin.setValue(200)
         self.speed_spin.valueChanged.connect(self.speed_changed.emit)
+        speed_row = QHBoxLayout()
+        speed_row.addWidget(QLabel("Скорость:"))
+        speed_row.addWidget(self.speed_spin)
+        layout.addLayout(speed_row)
 
-        layout.addWidget(QLabel("<b>Обработка:</b>"))
-        self.analysis_cb = QCheckBox("Анализ")
-        self.analysis_cb.setChecked(True)
-        self.analysis_cb.toggled.connect(self.analysis_enabled.emit)
-        layout.addWidget(self.analysis_cb)
-        layout.addWidget(self.mode_combo)
+        # === БЛОК КОНТРАСТА ===
+        layout.addWidget(QLabel("<b>Контраст:</b>"))
 
         self.contrast_cb = QCheckBox("Контраст (производная)")
         self.contrast_cb.setChecked(False)
         self.contrast_cb.toggled.connect(self.contrast_enabled.emit)
+        self.contrast_cb.toggled.connect(self._refresh_state)
         layout.addWidget(self.contrast_cb)
 
         self.norm_cb = QCheckBox("Норм. контраст (Майкельсон)")
         self.norm_cb.setChecked(False)
         self.norm_cb.toggled.connect(self.norm_contrast_enabled.emit)
         self.norm_cb.toggled.connect(self._on_norm_toggled)
+        self.norm_cb.toggled.connect(self._refresh_state)
         layout.addWidget(self.norm_cb)
 
         self.norm_window_spin = QSpinBox()
@@ -114,13 +106,31 @@ class AnalysisSettingsWidget(QWidget):
         norm_row.addWidget(self.auto_params_btn)
         layout.addLayout(norm_row)
         self._on_norm_toggled(False)
-        layout.addWidget(self.is_draw_fit)
-        layout.addWidget(self.is_draw_lines_on_plot)
-        layout.addWidget(QLabel("<b>Скорость обновления расчетов</b>"))
-        layout.addWidget(self.speed_spin)
+
+        # === БЛОК ФОКУСА (интенсивность) — виден только в фит-режимах ===
+        self.focus_box = QWidget()
+        fb = QVBoxLayout(self.focus_box)
+        fb.setContentsMargins(0, 0, 0, 0)
+
+        fb.addWidget(QLabel("<b>Интенсивность:</b>"))
+        self.current_focus_label = QLabel("I X: | Y: ")
+        fb.addWidget(self.current_focus_label)
+        self.best_focus_label = QLabel("max I  X:  | Y: ")
+        self.best_focus_label.setStyleSheet("color: green; font-weight: bold;")
+        fb.addWidget(self.best_focus_label)
+        self.reset_focus_btn = QPushButton("Сбросить максимум")
+        self.reset_focus_btn.clicked.connect(self._reset_focus_records)
+        fb.addWidget(self.reset_focus_btn)
+        layout.addWidget(self.focus_box)
+
+        # === СТАТУС (какая камера анализируется) ===
+        self.cam_label = QLabel("")
+        self.cam_label.setStyleSheet("color: gray;")
+        layout.addWidget(self.cam_label)
+
         layout.addStretch()
 
-        self._on_mode_changed()
+        self._refresh_state()
 
     def _on_norm_toggled(self, enabled):
         self.norm_window_spin.setEnabled(enabled)
@@ -131,23 +141,26 @@ class AnalysisSettingsWidget(QWidget):
         self.norm_window_spin.setValue(window)
         self.norm_step_spin.setValue(step)
 
+    def set_camera(self, name):
+        self.cam_label.setText(f"Камера: {name}")
+
     def _on_mode_changed(self):
         current_mode = self.mode_combo.currentData()
         self.mode_changed.emit(current_mode)
-
         need_draw_cross = current_mode != 0
         GlobalBus.instance().is_draw_cross.emit(need_draw_cross)
+        self._refresh_state()
 
-        # is_processing_active = current_mode != 0
-        # self.is_draw_lines_on_plot.setEnabled(is_processing_active)
-        # self.reset_focus_btn.setEnabled(is_processing_active)
-
-        # if not is_processing_active:
-        #     if self.is_draw_lines_on_plot.isChecked():
-        #         #FIXME: temp
-        #         pass
-        #         self.is_draw_lines_on_plot.setChecked(False)
-        #     self._reset_focus_records()
+    def _refresh_state(self):
+        """Обновляет видимость блоков по текущему режиму и контрасту."""
+        mode = self.mode_combo.currentData()
+        in_fit = mode in (1, 2)
+        has_contrast = self.contrast_cb.isChecked() or self.norm_cb.isChecked()
+        # Блок интенсивности осмыслен только когда анализируем фит и не в контрасте
+        focus_visible = in_fit and not has_contrast
+        self.focus_box.setVisible(focus_visible)
+        if not focus_visible:
+            self._reset_focus_records()
 
     def _reset_focus_records(self):
         """Сбрасывает накопленные рекорды интенсивности"""

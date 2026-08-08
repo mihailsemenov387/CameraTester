@@ -74,11 +74,9 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.current_mode = mode
         self.plotter.update_is_draw(mode != 0)
         if mode == 0:
-            # self.analysis_timer.stop()
             self.plotter.clear_canvas()
-
-        # else:
-        # self.analysis_timer.start(self.settings_ui.speed_spin.value())
+            # Чтобы фит не оставался висеть на видео при переключении
+            GlobalBus.instance().analysis_cleared.emit()
 
     def _on_analysis_enabled(self, enabled):
         self.analysis_enabled = enabled
@@ -121,87 +119,73 @@ class AnalysisWorkspace(AbstractWorkspace):
     def _buffer_frame(self, cam_name, frame):
         if not self.analysis_enabled:
             return
+        if cam_name != self.latest_cam_name:
+            self.latest_cam_name = cam_name
+            self.settings_ui.set_camera(cam_name)
         self.latest_frame = frame
-        self.latest_cam_name = cam_name
         self._is_new_frame = True
 
-    # TODO: add unified interface for send/recive analysis results
-    # BUG: on low framerate big lag.
     def _do_analysis_step(self):
         if self.latest_frame is None or not self._is_new_frame:
             return
-
-        # Сбрасываем сразу, убирая риск циклического наслоения
         self._is_new_frame = False
 
+        frame = self.latest_frame
         mode = self.current_mode
-        res = None
+        want_deriv = self.contrast_enabled
+        want_norm = self.norm_contrast_enabled
 
-        # Контраст (производная) и/или нормированный контраст — отдельные
-        # кнопки. На графике рисуем производную/точки норм. контраста, а сам
-        # фит всё равно отправляем в оверлей («фит на главном выходе» работает
-        # и в режимах контраста).
-        if self.contrast_enabled or self.norm_contrast_enabled:
-            fit_res = None
-            if mode == 1:
-                fit_res = process(self.latest_frame)
-                if fit_res:
-                    GlobalBus.instance().analysis_results_sent.emit(
-                        self.latest_cam_name, fit_res
-                    )
-            elif mode == 2:
-                fit_res = process_many(self.latest_frame)
-                if fit_res:
-                    GlobalBus.instance().analysis_many_results_sent.emit(
-                        self.latest_cam_name, fit_res
-                    )
-
-            data = {}
-            if self.contrast_enabled:
-                c = process_contrast(self.latest_frame, fit_result=fit_res)
-                if c:
-                    data.update(c)
-            if self.norm_contrast_enabled:
-                n = process_contrast_normalized(
-                    self.latest_frame,
-                    fit_result=fit_res,
-                    window=self.norm_window,
-                    step=self.norm_step,
-                )
-                if n:
-                    data.update(n)
-
-            if data:
-                self._is_new_frame = False
-                self.plotter.update_data(data)
+        # Базовые профили нужны режиму «только профили» и контрасту —
+        # считаем один раз и переиспользуем во всех функциях.
+        need_base = want_deriv or want_norm or mode == 0
+        base = _get_base_profiles(frame) if need_base else None
+        if need_base and base is None:
             return
 
-        if mode == 0:
-            _, x, y, x_w, y_w = _get_base_profiles(self.latest_frame)
-            self.plotter.update_data({"x_raw": x_w, "y_raw": y_w, "x": x, "y": y})
-            return
-
+        # Фит считаем в режимах 1/2: он нужен и для оверлея («фит на главном
+        # выходе»), и как источник производной/нормированного контраста.
+        fit_res = None
         if mode == 1:
-            # print(f"[DEBUG]: start frame processing")
-            res = process(self.latest_frame)
-            # print(f"[DEBUG]: Frame processing finished")
-        elif mode == 2:
-            # print(f"[DEBUG]: start frame processing")
-            res = process_many(self.latest_frame)
-            # print(f"[DEBUG]: Frame processing finished")
-
-        if res:
-            self._is_new_frame = False  # Больше этот кадр обрабатывать не нужно!
-            self.plotter.update_data(res)
-
-            if mode == 1:
+            fit_res = process(frame, base=base)
+            if fit_res:
                 GlobalBus.instance().analysis_results_sent.emit(
-                    self.latest_cam_name, res
+                    self.latest_cam_name, fit_res
                 )
-            elif mode == 2:
+        elif mode == 2:
+            fit_res = process_many(frame, base=base)
+            if fit_res:
                 GlobalBus.instance().analysis_many_results_sent.emit(
-                    self.latest_cam_name, res
+                    self.latest_cam_name, fit_res
                 )
+
+        # Собираем то, что показываем на графиках.
+        data = {}
+        if want_deriv:
+            c = process_contrast(frame, base=base, fit_result=fit_res)
+            if c:
+                data.update(c)
+        if want_norm:
+            n = process_contrast_normalized(
+                frame,
+                base=base,
+                fit_result=fit_res,
+                window=self.norm_window,
+                step=self.norm_step,
+            )
+            if n:
+                data.update(n)
+
+        # Если контраст не включён — показываем результат фита,
+        # а без фита («только профили») — сырые профили.
+        if not data:
+            if fit_res:
+                data.update(fit_res)
+            elif base:
+                _, x, y, x_w, y_w = base
+                data.update({"x": x, "y": y, "x_raw": x_w, "y_raw": y_w})
+
+        if data:
+            self.plotter.update_data(data)
 
     def shutdown(self):
         self.analysis_timer.stop()
