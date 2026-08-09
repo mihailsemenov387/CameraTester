@@ -10,6 +10,7 @@ from utils.SpecialFunctions.AnalysysFun import (
     process_contrast,
     process_contrast_normalized,
     process_many,
+    process_second_derivative,
 )
 from workspaces.AbstractWorkspace import AbstractWorkspace, register_workspace
 
@@ -26,6 +27,7 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.current_mode = 0
         self.analysis_enabled = True
         self.contrast_enabled = False
+        self.second_deriv_enabled = False
         self.norm_contrast_enabled = False
         self.norm_window = 3
         self.norm_step = 200
@@ -48,6 +50,7 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.settings_ui.mode_changed.connect(self._update_mode)
         self.settings_ui.analysis_enabled.connect(self._on_analysis_enabled)
         self.settings_ui.contrast_enabled.connect(self._on_contrast_enabled)
+        self.settings_ui.second_deriv_enabled.connect(self._on_second_deriv_enabled)
         self.settings_ui.norm_contrast_enabled.connect(self._on_norm_contrast_enabled)
         self.settings_ui.norm_contrast_window.connect(self._set_norm_window)
         self.settings_ui.norm_contrast_step.connect(self._set_norm_step)
@@ -93,6 +96,9 @@ class AnalysisWorkspace(AbstractWorkspace):
         self.contrast_enabled = enabled
         self.plotter.set_contrast_mode(enabled)
 
+    def _on_second_deriv_enabled(self, enabled):
+        self.second_deriv_enabled = enabled
+
     def _on_norm_contrast_enabled(self, enabled):
         self.norm_contrast_enabled = enabled
 
@@ -133,17 +139,16 @@ class AnalysisWorkspace(AbstractWorkspace):
         frame = self.latest_frame
         mode = self.current_mode
         want_deriv = self.contrast_enabled
+        want_2deriv = self.second_deriv_enabled
         want_norm = self.norm_contrast_enabled
 
-        # Базовые профили нужны режиму «только профили» и контрасту —
-        # считаем один раз и переиспользуем во всех функциях.
-        need_base = want_deriv or want_norm or mode == 0
+        # Базовые профили нужны режиму «только профили» и контрасту
+        need_base = want_deriv or want_2deriv or want_norm or mode == 0
         base = _get_base_profiles(frame) if need_base else None
         if need_base and base is None:
             return
 
-        # Фит считаем в режимах 1/2: он нужен и для оверлея («фит на главном
-        # выходе»), и как источник производной/нормированного контраста.
+        # Фит считаем в режимах 1/2
         fit_res = None
         if mode == 1:
             fit_res = process(frame, base=base)
@@ -158,12 +163,29 @@ class AnalysisWorkspace(AbstractWorkspace):
                     self.latest_cam_name, fit_res
                 )
 
-        # Собираем то, что показываем на графиках.
+        # === СБОРКА ДАННЫХ ===
         data = {}
+
+        # 1. Сначала ВСЕГДА кладем в словарь базу (сырые профили) или результаты фита
+        if fit_res:
+            data.update(fit_res)
+        elif base:
+            _, x, y, x_w, y_w = base
+            data.update({"x": x, "y": y, "x_raw": x_w, "y_raw": y_w})
+
+        # 2. Если включена производная - добавляем её ключи поверх
         if want_deriv:
             c = process_contrast(frame, base=base, fit_result=fit_res)
             if c:
                 data.update(c)
+
+        # 2b. Если включена вторая производная - добавляем её ключи поверх
+        if want_2deriv:
+            d2 = process_second_derivative(frame, base=base, fit_result=fit_res)
+            if d2:
+                data.update(d2)
+
+        # 3. Если включен Майкельсон - добавляем его ключи поверх
         if want_norm:
             n = process_contrast_normalized(
                 frame,
@@ -175,15 +197,7 @@ class AnalysisWorkspace(AbstractWorkspace):
             if n:
                 data.update(n)
 
-        # Если контраст не включён — показываем результат фита,
-        # а без фита («только профили») — сырые профили.
-        if not data:
-            if fit_res:
-                data.update(fit_res)
-            elif base:
-                _, x, y, x_w, y_w = base
-                data.update({"x": x, "y": y, "x_raw": x_w, "y_raw": y_w})
-
+        # 4. Отправляем в плоттер
         if data:
             self.plotter.update_data(data)
 

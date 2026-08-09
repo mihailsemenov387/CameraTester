@@ -246,6 +246,45 @@ def process_contrast(img, fit_result=None, base=None):
     }
 
 
+def process_second_derivative(img, fit_result=None, base=None):
+    """Вторая производная профиля интенсивности по координате.
+
+    Полностью аналогична `process_contrast`, но берёт `np.gradient`
+    от первой производной — локальные экстремумы первой производной
+    (точки перегиба профиля) становятся нулями, что удобно для поиска
+    резких переходов яркости.
+
+    Если передан результат фита, вторая производная считается от
+    гладкого фита, иначе — от сырого профиля. Профиль остаётся в
+    `x_raw`/`y_raw`, вторая производная укладывается в `x_2deriv`/`y_2deriv`.
+    """
+    if base is None:
+        base = _get_base_profiles(img)
+    if not base:
+        return None
+    _, x, y, x_w, y_w = base
+
+    ddx = np.gradient(np.gradient(x_w))
+    ddy = np.gradient(np.gradient(y_w))
+
+    if fit_result is not None:
+        t = fit_result.get("total_fit_x")
+        if t is not None and np.any(t):
+            ddx = np.gradient(np.gradient(t))
+        t = fit_result.get("total_fit_y")
+        if t is not None and np.any(t):
+            ddy = np.gradient(np.gradient(t))
+
+    return {
+        "x": x,
+        "y": y,
+        "x_raw": x_w,
+        "y_raw": y_w,
+        "x_2deriv": ddx,
+        "y_2deriv": ddy,
+    }
+
+
 def _local_michelson(profile, window, step):
     """Локальный нормированный контраст (Майкельсон) вдоль профиля.
 

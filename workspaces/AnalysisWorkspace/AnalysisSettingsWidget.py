@@ -18,6 +18,7 @@ class AnalysisSettingsWidget(QWidget):
     mode_changed = Signal(int)
     analysis_enabled = Signal(bool)
     contrast_enabled = Signal(bool)
+    second_deriv_enabled = Signal(bool)
     norm_contrast_enabled = Signal(bool)
     norm_contrast_window = Signal(int)
     norm_contrast_step = Signal(int)
@@ -72,6 +73,12 @@ class AnalysisSettingsWidget(QWidget):
         self.contrast_cb.toggled.connect(self.contrast_enabled.emit)
         self.contrast_cb.toggled.connect(self._refresh_state)
         layout.addWidget(self.contrast_cb)
+
+        self.second_deriv_cb = QCheckBox("Контраст (2-я производная)")
+        self.second_deriv_cb.setChecked(False)
+        self.second_deriv_cb.toggled.connect(self.second_deriv_enabled.emit)
+        self.second_deriv_cb.toggled.connect(self._refresh_state)
+        layout.addWidget(self.second_deriv_cb)
 
         self.norm_cb = QCheckBox("Норм. контраст (Майкельсон)")
         self.norm_cb.setChecked(False)
@@ -155,7 +162,11 @@ class AnalysisSettingsWidget(QWidget):
         """Обновляет видимость блоков по текущему режиму и контрасту."""
         mode = self.mode_combo.currentData()
         in_fit = mode in (1, 2)
-        has_contrast = self.contrast_cb.isChecked() or self.norm_cb.isChecked()
+        has_contrast = (
+            self.contrast_cb.isChecked()
+            or self.second_deriv_cb.isChecked()
+            or self.norm_cb.isChecked()
+        )
         # Блок интенсивности осмыслен только когда анализируем фит и не в контрасте
         focus_visible = in_fit and not has_contrast
         self.focus_box.setVisible(focus_visible)

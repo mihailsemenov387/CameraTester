@@ -1,3 +1,5 @@
+import os
+
 from PySide6.QtCore import QTimer
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtWidgets import (
@@ -45,6 +47,54 @@ class FakeCamConfig(QWidget):
 
     def get_values(self):
         return {"name": "Fake camera"}
+
+
+class MediaFileConfigPage(QWidget):
+    """Общая страница настройки для «камер» из файла (фото / видео).
+
+    Наследнику достаточно задать `file_filter` (для диалога выбора)
+    и `placeholder` (подсказку в поле пути). Конфиг возвращает `path`
+    и имя на основе имени файла — фабрика камер получит `path`.
+    """
+
+    file_filter = "Все файлы (*)"
+    placeholder = "Выберите файл"
+
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        self.path_input = QLineEdit()
+        self.path_input.setPlaceholderText(self.placeholder)
+
+        self.browse_btn = QPushButton("Обзор...")
+        self.browse_btn.clicked.connect(self._browse)
+
+        layout.addWidget(self.path_input)
+        layout.addWidget(self.browse_btn)
+        layout.addStretch()
+
+    def _browse(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Выберите файл", "", self.file_filter
+        )
+        if path:
+            self.path_input.setText(path)
+
+    def get_values(self) -> dict:
+        path = self.path_input.text()
+        return {
+            "path": path,
+            "name": os.path.basename(path) if path else "Файл не выбран",
+        }
+
+
+@register_camera_config(typ="PHOTO", title="Photo (из файла)")
+class PhotoConfigPage(MediaFileConfigPage):
+    file_filter = "Изображения (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+    placeholder = "Выберите изображение"
 
 
 # FIXME: cleanup and refactor
