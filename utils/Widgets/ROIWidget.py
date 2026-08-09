@@ -75,6 +75,14 @@ class ROIWidget(QWidget):
             return QRectF()
         return QRectF(0, 0, self.current_image.width(), self.current_image.height())
 
+    def _snap_to_pixel(self, p: QPointF) -> QPointF:
+        """Округляет точку в систему координат кадра до целого пикселя.
+
+        Иначе при медленном ресайзе рамка держит дробные координаты и её
+        границы/затемнение мерцают между пикселями (видимая «дерганость»).
+        """
+        return QPointF(float(round(p.x())), float(round(p.y())))
+
     # ---------- Хелперы ----------
     def _hit_handle(self, img) -> str:
         _, _, s = self.get_transform()
@@ -91,19 +99,27 @@ class ROIWidget(QWidget):
         return None
 
     def _apply_resize(self, corner, pt):
-        r = QRectF(self._roi_orig)
-        if corner == "tl":
-            r.setTopLeft(pt)
-        elif corner == "tr":
-            r.setTopRight(pt)
-        elif corner == "bl":
-            r.setBottomLeft(pt)
-        elif corner == "br":
-            r.setBottomRight(pt)
-        r = r.normalized().intersected(self._image_rect())
-        if r.width() < MIN_ROI or r.height() < MIN_ROI:
-            r = QRectF(self._roi_orig)
-        self.roi = r
+        orig = self._roi_orig
+
+        # Целые пиксели — иначе при медленном ресайзе рамка «дёргается»
+        # между пикселями из-за дробных координат.
+        x = round(pt.x())
+        y = round(pt.y())
+
+        left, right = orig.left(), orig.right()
+        top, bottom = orig.top(), orig.bottom()
+
+        if "l" in corner:
+            left = min(x, right - MIN_ROI)
+        elif "r" in corner:
+            right = max(x, left + MIN_ROI)
+        if "t" in corner:
+            top = min(y, bottom - MIN_ROI)
+        elif "b" in corner:
+            bottom = max(y, top + MIN_ROI)
+
+        # Выход за кадр обрезается тут; min-размер уже гарантирован зажимами.
+        self.roi = QRectF(left, top, right - left, bottom - top).intersected(self._image_rect())
 
     def _clamp_move(self, r):
         ir = self._image_rect()
@@ -134,7 +150,9 @@ class ROIWidget(QWidget):
         if event.button() != Qt.MouseButton.LeftButton:
             return
 
-        img = self.widget_to_image(event.position().x(), event.position().y())
+        img = self._snap_to_pixel(
+            self.widget_to_image(event.position().x(), event.position().y())
+        )
 
         if self.has_roi():
             corner = self._hit_handle(img)
