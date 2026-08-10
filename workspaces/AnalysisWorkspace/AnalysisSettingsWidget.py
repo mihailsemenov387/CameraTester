@@ -80,7 +80,7 @@ class AnalysisSettingsWidget(QWidget):
         self.second_deriv_cb.toggled.connect(self._refresh_state)
         layout.addWidget(self.second_deriv_cb)
 
-        self.norm_cb = QCheckBox("Норм. контраст (Майкельсон)")
+        self.norm_cb = QCheckBox("Контраст ( (I_max - I_min)/(I_max + I_min) )")
         self.norm_cb.setChecked(False)
         self.norm_cb.toggled.connect(self.norm_contrast_enabled.emit)
         self.norm_cb.toggled.connect(self._on_norm_toggled)
